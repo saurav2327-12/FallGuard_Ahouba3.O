@@ -1,0 +1,582 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Algorithm Logic - Intelligent Fall Detection</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&amp;family=Roboto+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .slide-container {
+        width: 1280px;
+        height: 720px;
+        background-color: #0f172a; /* Slate 900 */
+        color: white;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Subtle background pattern */
+      .bg-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #0f172a;
+        background-image:
+          radial-gradient(
+            circle at 15% 50%,
+            rgba(34, 211, 238, 0.05) 0%,
+            transparent 25%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(167, 139, 250, 0.05) 0%,
+            transparent 25%
+          );
+        z-index: 0;
+      }
+
+      .content-wrapper {
+        position: relative;
+        z-index: 10;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 60px;
+      }
+
+      .header-bar {
+        border-left: 4px solid #22d3ee;
+        padding-left: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      /* Main Content Grid */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 0.8fr;
+        gap: 2rem;
+        flex: 1;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      /* Code Editor Window Styling */
+      .editor-window {
+        background-color: #1e293b; /* Slate 800 */
+        border-radius: 12px;
+        border: 1px solid #334155;
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.3),
+          0 8px 10px -6px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        font-family: "Roboto Mono", monospace;
+      }
+
+      .editor-header {
+        background-color: #0f172a;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #334155;
+        display: flex;
+        align-items: center;
+      }
+
+      .window-controls {
+        display: flex;
+        gap: 8px;
+        margin-right: 16px;
+      }
+
+      .control-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+
+      .dot-red {
+        background-color: #ef4444;
+      }
+      .dot-yellow {
+        background-color: #f59e0b;
+      }
+      .dot-green {
+        background-color: #22c55e;
+      }
+
+      .file-tab {
+        background-color: #1e293b;
+        padding: 4px 12px;
+        border-radius: 4px 4px 0 0;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .file-tab.active {
+        color: #e2e8f0;
+        background-color: #334155;
+      }
+
+      .editor-content {
+        padding: 1.5rem 0;
+        overflow-y: hidden;
+        flex: 1;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #e2e8f0;
+        position: relative;
+      }
+
+      .line-row {
+        display: flex;
+        padding: 0 1.5rem;
+      }
+
+      .line-row:hover {
+        background-color: #2d3b4e;
+      }
+
+      .line-num {
+        color: #475569;
+        width: 30px;
+        text-align: right;
+        margin-right: 1.5rem;
+        user-select: none;
+        font-size: 0.8rem;
+        padding-top: 2px;
+      }
+
+      .code-line {
+        flex: 1;
+      }
+
+      /* Syntax Highlighting */
+      .sc-keyword {
+        color: #c084fc;
+        font-weight: bold;
+      } /* Purple */
+      .sc-func {
+        color: #60a5fa;
+      } /* Blue */
+      .sc-var {
+        color: #22d3ee;
+      } /* Cyan */
+      .sc-string {
+        color: #34d399;
+      } /* Emerald */
+      .sc-number {
+        color: #f472b6;
+      } /* Pink */
+      .sc-comment {
+        color: #64748b;
+        font-style: italic;
+      } /* Slate */
+      .sc-operator {
+        color: #e2e8f0;
+      }
+
+      /* Logic Explainer Column */
+      .logic-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding-top: 1rem;
+      }
+
+      .logic-card {
+        background-color: rgba(30, 41, 59, 0.5);
+        border-left: 3px solid;
+        padding: 1rem;
+        border-radius: 0 8px 8px 0;
+        position: relative;
+        transition: transform 0.2s;
+      }
+
+      .logic-card:hover {
+        transform: translateX(5px);
+        background-color: rgba(30, 41, 59, 0.8);
+      }
+
+      .card-detection {
+        border-color: #22d3ee;
+      }
+      .card-timer {
+        border-color: #f59e0b;
+      }
+      .card-action {
+        border-color: #ef4444;
+      }
+
+      .card-icon {
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+        font-size: 1.25rem;
+        opacity: 0.2;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        font-family: "Space Grotesk", sans-serif;
+      }
+
+      .badge-detection {
+        background-color: rgba(34, 211, 238, 0.1);
+        color: #22d3ee;
+      }
+      .badge-timer {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+      }
+      .badge-action {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+      }
+
+      .connector-line {
+        position: absolute;
+        left: -35px;
+        top: 50%;
+        width: 32px;
+        height: 1px;
+        background-color: #475569;
+        opacity: 0.5;
+      }
+
+      .connector-dot {
+        position: absolute;
+        left: -39px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #475569;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <!-- Background -->
+      <div class="bg-pattern"></div>
+      <div class="content-wrapper">
+        <!-- Header -->
+        <div class="header-bar">
+          <div>
+            <p
+              class="text-cyan-400 font-mono text-sm tracking-widest uppercase font-bold mb-1"
+            >
+              CORE ALGORITHM
+            </p>
+            <h1 class="text-4xl font-bold text-white font-inter">
+              Pseudocode Logic Flow
+            </h1>
+          </div>
+          <div
+            class="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center gap-3"
+          >
+            <i class="fa-brands fa-github text-white text-xl"></i>
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider"
+                >Source File</span
+              >
+              <span class="text-xs text-white font-mono font-bold"
+                >FallDetectorService.java</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Main Grid -->
+        <div class="main-grid">
+          <!-- Left: Code Editor -->
+          <div class="editor-window">
+            <div class="editor-header">
+              <div class="window-controls">
+                <div class="control-dot dot-red"></div>
+                <div class="control-dot dot-yellow"></div>
+                <div class="control-dot dot-green"></div>
+              </div>
+              <div class="file-tab active">
+                <i class="fa-solid fa-code text-xs"></i> logic.java
+              </div>
+            </div>
+            <div class="editor-content">
+              <!-- Line 1 -->
+              <div class="line-row">
+                <div class="line-num">1</div>
+                <div class="code-line">
+                  <span class="sc-keyword">while</span> (<span class="sc-var"
+                    >isMonitoring</span
+                  >) {
+                </div>
+              </div>
+              <!-- Line 2 -->
+              <div class="line-row">
+                <div class="line-num">2</div>
+                <div class="code-line">
+                    <span class="sc-comment">// 1. Read Sensor Data</span>
+                </div>
+              </div>
+              <!-- Line 3 -->
+              <div class="line-row">
+                <div class="line-num">3</div>
+                <div class="code-line">
+                    <span class="sc-var">accel</span> =
+                  <span class="sc-func">sensorManager</span>.<span
+                    class="sc-func"
+                    >readAccelerometer</span
+                  >();
+                </div>
+              </div>
+              <!-- Line 4 -->
+              <div class="line-row">
+                <div class="line-num">4</div>
+                <div class="code-line"></div>
+              </div>
+              <!-- Line 5 -->
+              <div class="line-row">
+                <div class="line-num">5</div>
+                <div class="code-line">
+                    <span class="sc-comment"
+                    >// 2. Detect Free Fall (&lt; 0.5g)</span
+                  >
+                </div>
+              </div>
+              <!-- Line 6 -->
+              <div class="line-row">
+                <div class="line-num">6</div>
+                <div class="code-line">
+                    <span class="sc-keyword">if</span> (<span class="sc-var"
+                    >accel</span
+                  >
+                  &lt; <span class="sc-number">0.5</span>) {
+                </div>
+              </div>
+              <!-- Line 7 -->
+              <div class="line-row">
+                <div class="line-num">7</div>
+                <div class="code-line">
+                      <span class="sc-var">freeFallDetected</span> =
+                  <span class="sc-keyword">true</span>;
+                </div>
+              </div>
+              <!-- Line 8 -->
+              <div class="line-row">
+                <div class="line-num">8</div>
+                <div class="code-line">  }</div>
+              </div>
+              <!-- Line 9 -->
+              <div class="line-row">
+                <div class="line-num">9</div>
+                <div class="code-line"></div>
+              </div>
+              <!-- Line 10 -->
+              <div class="line-row">
+                <div class="line-num">10</div>
+                <div class="code-line">
+                    <span class="sc-comment"
+                    >// 3. Detect Impact (&gt; 2.5g)</span
+                  >
+                </div>
+              </div>
+              <!-- Line 11 -->
+              <div class="line-row">
+                <div class="line-num">11</div>
+                <div class="code-line">
+                    <span class="sc-keyword">if</span> (<span class="sc-var"
+                    >freeFallDetected</span
+                  >
+                  &amp;&amp; <span class="sc-var">accel</span> &gt;
+                  <span class="sc-number">2.5</span>) {
+                </div>
+              </div>
+              <!-- Line 12 -->
+              <div class="line-row">
+                <div class="line-num">12</div>
+                <div class="code-line">
+                      <span class="sc-comment"
+                    >// 4. Check for inactivity (10s)</span
+                  >
+                </div>
+              </div>
+              <!-- Line 13 -->
+              <div class="line-row">
+                <div class="line-num">13</div>
+                <div class="code-line">
+                      <span class="sc-keyword">if</span> (<span class="sc-func"
+                    >checkStillness</span
+                  >(<span class="sc-number">10000</span>)) {
+                </div>
+              </div>
+              <!-- Line 14 -->
+              <div class="line-row">
+                <div class="line-num">14</div>
+                <div class="code-line">
+                        <span class="sc-func">triggerSOS</span>();
+                </div>
+              </div>
+              <!-- Line 15 -->
+              <div class="line-row">
+                <div class="line-num">15</div>
+                <div class="code-line">    }</div>
+              </div>
+              <!-- Line 16 -->
+              <div class="line-row">
+                <div class="line-num">16</div>
+                <div class="code-line">  }</div>
+              </div>
+              <!-- Line 17 -->
+              <div class="line-row">
+                <div class="line-num">17</div>
+                <div class="code-line">}</div>
+              </div>
+              <!-- Line 18 -->
+              <div class="line-row">
+                <div class="line-num">18</div>
+                <div class="code-line"></div>
+              </div>
+              <!-- Line 19 -->
+              <div class="line-row">
+                <div class="line-num">19</div>
+                <div class="code-line">
+                  <span class="sc-keyword">void</span>
+                  <span class="sc-func">triggerSOS</span>() {
+                </div>
+              </div>
+              <!-- Line 20 -->
+              <div class="line-row">
+                <div class="line-num">20</div>
+                <div class="code-line">
+                    <span class="sc-func">vibratePhone</span>();
+                </div>
+              </div>
+              <!-- Line 21 -->
+              <div class="line-row">
+                <div class="line-num">21</div>
+                <div class="code-line">
+                    <span class="sc-func">playVoiceAlert</span>(<span
+                    class="sc-string"
+                    >"Fall Detected"</span
+                  >);
+                </div>
+              </div>
+              <!-- Line 22 -->
+              <div class="line-row">
+                <div class="line-num">22</div>
+                <div class="code-line">
+                    <span class="sc-var">location</span> =
+                  <span class="sc-func">getGPSCoordinates</span>();
+                </div>
+              </div>
+              <!-- Line 23 -->
+              <div class="line-row">
+                <div class="line-num">23</div>
+                <div class="code-line">
+                    <span class="sc-func">sendSMS</span>(<span class="sc-var"
+                    >emergencyContact</span
+                  >, <span class="sc-var">location</span>);
+                </div>
+              </div>
+              <!-- Line 24 -->
+              <div class="line-row">
+                <div class="line-num">24</div>
+                <div class="code-line">}</div>
+              </div>
+            </div>
+          </div>
+          <!-- Right: Logic Explainer -->
+          <div class="logic-panel">
+            <!-- Logic Block 1 -->
+            <div class="logic-card card-detection">
+              <div class="connector-dot"></div>
+              <div class="connector-line"></div>
+              <span class="badge badge-detection">Pattern Recognition</span>
+              <h3 class="text-white font-bold text-lg mb-1">
+                Threshold Monitoring
+              </h3>
+              <p class="text-slate-400 text-sm">
+                Continuously compares real-time accelerometer values against
+                pre-defined limits for "Weightlessness" (&lt;0.5g) and "Impact
+                Force" (&gt;2.5g).
+              </p>
+              <i class="fa-solid fa-wave-square card-icon"></i>
+            </div>
+            <!-- Logic Block 2 -->
+            <div class="logic-card card-timer">
+              <div class="connector-dot"></div>
+              <div class="connector-line"></div>
+              <span class="badge badge-timer">False Positive Check</span>
+              <h3 class="text-white font-bold text-lg mb-1">
+                Inactivity Timer
+              </h3>
+              <p class="text-slate-400 text-sm">
+                A critical verification step. If the user moves within 10
+                seconds after impact, the alarm is aborted to prevent false
+                alerts from dropping the phone.
+              </p>
+              <i class="fa-solid fa-hourglass-half card-icon"></i>
+            </div>
+            <!-- Logic Block 3 -->
+            <div class="logic-card card-action">
+              <div class="connector-dot"></div>
+              <div class="connector-line"></div>
+              <span class="badge badge-action">Emergency Protocol</span>
+              <h3 class="text-white font-bold text-lg mb-1">
+                Sequential Action
+              </h3>
+              <p class="text-slate-400 text-sm">
+                Triggers a multi-sensory response:
+                <br />
+                1. <strong>Haptic:</strong> Vibration for user awareness.
+                <br />
+                2. <strong>Audio:</strong> Voice confirmation.
+                <br />
+                3. <strong>Network:</strong> GPS fetch &amp; SMS dispatch.
+              </p>
+              <i class="fa-solid fa-bell card-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,449 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>System Architecture - Intelligent Fall Detection</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .slide-container {
+        width: 1280px;
+        height: 720px;
+        background-color: #0f172a; /* Slate 900 */
+        color: white;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .bg-grid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: radial-gradient(#334155 1px, transparent 1px);
+        background-size: 40px 40px;
+        opacity: 0.15;
+        z-index: 0;
+      }
+
+      .content-wrapper {
+        position: relative;
+        z-index: 10;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 60px;
+      }
+
+      .header-bar {
+        border-left: 4px solid #22d3ee;
+        padding-left: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      /* Flow Diagram Styles */
+      .flow-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+        position: relative;
+        padding: 20px 0;
+      }
+
+      .component-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        width: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease;
+      }
+
+      .component-card:hover {
+        transform: translateY(-5px);
+        border-color: #22d3ee;
+      }
+
+      .icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        background-color: #0f172a;
+        border: 2px solid #334155;
+      }
+
+      /* Connecting Lines */
+      .connector {
+        flex: 1;
+        height: 2px;
+        background-color: #334155;
+        position: relative;
+        margin: 0 10px;
+      }
+
+      .connector::after {
+        content: "";
+        position: absolute;
+        right: -2px;
+        top: -4px;
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 8px solid #334155;
+      }
+
+      /* Animated signal dot on line */
+      .signal-dot {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #22d3ee;
+        box-shadow: 0 0 10px #22d3ee;
+        animation: moveSignal 2s infinite linear;
+      }
+
+      @keyframes moveSignal {
+        0% {
+          left: 0;
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          left: 100%;
+          opacity: 0;
+        }
+      }
+
+      /* Specific Colors */
+      .input-stage .icon-wrapper {
+        color: #38bdf8;
+        border-color: #38bdf8;
+      } /* Sky */
+      .process-stage .icon-wrapper {
+        color: #a78bfa;
+        border-color: #a78bfa;
+      } /* Violet */
+      .output-stage .icon-wrapper {
+        color: #fb7185;
+        border-color: #fb7185;
+      } /* Rose */
+      .action-stage .icon-wrapper {
+        color: #34d399;
+        border-color: #34d399;
+      } /* Emerald */
+
+      .stage-label {
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #94a3b8;
+        background-color: #0f172a;
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid #334155;
+        white-space: nowrap;
+      }
+
+      .data-badge {
+        font-size: 0.65rem;
+        background-color: #334155;
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: #e2e8f0;
+        margin-top: 8px;
+        font-family: monospace;
+      }
+
+      .dotted-box {
+        position: absolute;
+        border: 2px dashed #475569;
+        border-radius: 20px;
+        z-index: 0;
+      }
+
+      /* Layout groupings */
+      .group-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .feedback-loop {
+        position: absolute;
+        bottom: 60px;
+        left: 300px;
+        right: 300px;
+        height: 40px;
+        border: 2px dashed #334155;
+        border-top: none;
+        border-radius: 0 0 20px 20px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        padding-bottom: 10px;
+      }
+
+      .feedback-text {
+        background-color: #0f172a;
+        padding: 0 10px;
+        color: #64748b;
+        font-size: 0.8rem;
+        transform: translateY(50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <!-- Background -->
+      <div class="bg-grid"></div>
+      <div class="content-wrapper">
+        <!-- Header -->
+        <div class="header-bar">
+          <p
+            class="text-cyan-400 font-mono text-sm tracking-widest uppercase font-bold mb-1"
+          >
+            SYSTEM ARCHITECTURE
+          </p>
+          <h1 class="text-4xl font-bold text-white font-inter">
+            Data Flow &amp; Processing
+          </h1>
+        </div>
+        <!-- Main Architecture Diagram -->
+        <div class="flex-1 relative flex flex-col justify-center">
+          <!-- Dotted Zones for Logic Grouping -->
+          <!-- Input Zone -->
+          <div
+            class="dotted-box"
+            style="top: 10%; left: 2%; width: 22%; height: 80%"
+          >
+            <p
+              class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs text-slate-400 font-mono"
+            >
+              INPUT LAYER
+            </p>
+          </div>
+          <!-- Processing Zone -->
+          <div
+            class="dotted-box"
+            style="top: 10%; left: 28%; width: 22%; height: 80%"
+          >
+            <p
+              class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs text-slate-400 font-mono"
+            >
+              PROCESSING
+            </p>
+          </div>
+          <!-- Action Zone -->
+          <div
+            class="dotted-box"
+            style="top: 10%; left: 54%; width: 44%; height: 80%"
+          >
+            <p
+              class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs text-slate-400 font-mono"
+            >
+              OUTPUT &amp; ACTION
+            </p>
+          </div>
+          <!-- Flow Chart Components -->
+          <div
+            class="flex justify-between items-center px-8 relative z-10 w-full h-full"
+          >
+            <!-- Step 1: Sensors -->
+            <div class="component-card input-stage">
+              <div class="stage-label">Data Acquisition</div>
+              <div class="icon-wrapper">
+                <i class="fa-solid fa-mobile-screen"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-1">
+                Smartphone Sensors
+              </h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Continuous monitoring of motion data
+              </p>
+              <div class="flex gap-2 mt-2">
+                <span class="data-badge">Accel</span>
+                <span class="data-badge">Gyro</span>
+              </div>
+            </div>
+            <!-- Arrow -->
+            <div class="connector"><div class="signal-dot"></div></div>
+            <!-- Step 2: Algorithm -->
+            <div class="component-card process-stage">
+              <div class="stage-label">Core Logic</div>
+              <div class="icon-wrapper">
+                <i class="fa-solid fa-brain"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-1">
+                Fall Detection Algorithm
+              </h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Threshold analysis &amp; pattern recognition
+              </p>
+              <span
+                class="data-badge border border-violet-500/30 text-violet-200"
+                >Decision Engine</span
+              >
+            </div>
+            <!-- Arrow -->
+            <div class="connector">
+              <div class="signal-dot" style="animation-delay: 0.5s"></div>
+            </div>
+            <!-- Step 3: Action Group (Stacked) -->
+            <div class="flex flex-col gap-6">
+              <!-- Top: GPS -->
+              <div
+                class="component-card output-stage"
+                style="width: 200px; padding: 1rem"
+              >
+                <div
+                  class="icon-wrapper"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    font-size: 1rem;
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  <i class="fa-solid fa-location-crosshairs"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">GPS Module</h3>
+                <p class="text-[10px] text-slate-400">Fetch Coordinates</p>
+              </div>
+              <!-- Bottom: Feedback -->
+              <div
+                class="component-card output-stage"
+                style="width: 200px; padding: 1rem"
+              >
+                <div
+                  class="icon-wrapper"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    font-size: 1rem;
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  <i class="fa-solid fa-volume-high"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">User Feedback</h3>
+                <p class="text-[10px] text-slate-400">Voice &amp; Vibration</p>
+              </div>
+            </div>
+            <!-- Arrow -->
+            <div class="connector">
+              <div class="signal-dot" style="animation-delay: 1s"></div>
+            </div>
+            <!-- Step 4: SOS System -->
+            <div class="component-card action-stage">
+              <div class="stage-label">Emergency Response</div>
+              <div class="icon-wrapper">
+                <i class="fa-solid fa-tower-broadcast"></i>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-1">
+                SOS Alert System
+              </h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                SMS, Call &amp; Location Sharing
+              </p>
+              <div
+                class="mt-3 w-full bg-slate-800 rounded p-2 border border-slate-700"
+              >
+                <div class="flex items-center gap-2 mb-1">
+                  <i
+                    class="fa-solid fa-address-book text-emerald-400 text-xs"
+                  ></i>
+                  <span class="text-[10px] text-slate-300">Contacts DB</span>
+                </div>
+                <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div class="h-full w-2/3 bg-emerald-500"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Cancel Loop Visualization -->
+          <div
+            class="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-full max-w-2xl"
+          >
+            <div class="flex justify-center items-center gap-2 opacity-50">
+              <i class="fa-solid fa-rotate-left text-slate-500 text-sm"></i>
+              <p class="text-xs text-slate-500 font-mono">
+                10s CANCELLATION WINDOW LOOP (PRE-ALERT)
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Tech Stack Footer -->
+        <div
+          class="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center text-slate-500 text-xs"
+        >
+          <p>Architecture Version 1.0</p>
+          <div class="flex gap-4">
+            <div class="flex items-center gap-1">
+              <i class="fab fa-android"></i> <span>Android SDK</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <i class="fab fa-java"></i> <span>Java/Kotlin</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <i class="fas fa-map-marked-alt"></i> <span>Google Maps API</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

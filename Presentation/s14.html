@@ -1,0 +1,347 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Conclusion - Intelligent Fall Detection</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .slide-container {
+        width: 1280px;
+        height: 720px;
+        background-color: #0f172a;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Geometric Abstract Background */
+      .bg-geometric {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23334155' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        z-index: 0;
+      }
+
+      .content-wrapper {
+        position: relative;
+        z-index: 10;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 50px 70px;
+      }
+
+      .header-section {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        border-bottom: 1px solid #334155;
+        padding-bottom: 1.5rem;
+      }
+
+      .header-icon {
+        width: 64px;
+        height: 64px;
+        background-color: #3b82f6;
+        border-radius: 16px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2rem;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+      }
+
+      .main-layout {
+        display: flex;
+        gap: 4rem;
+        height: 100%;
+      }
+
+      .left-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .summary-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        transition: transform 0.2s ease;
+      }
+
+      .summary-card:hover {
+        transform: translateX(10px);
+        border-color: #3b82f6;
+        background-color: #253349;
+      }
+
+      .check-icon {
+        color: #10b981;
+        font-size: 1.25rem;
+        margin-top: 4px;
+        flex-shrink: 0;
+        background-color: rgba(16, 185, 129, 0.1);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .summary-text h3 {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .summary-text p {
+        font-family: "Inter", sans-serif;
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .right-column {
+        width: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .impact-box {
+        background-color: #0f172a;
+        border: 2px solid #3b82f6;
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        width: 100%;
+      }
+
+      .impact-icon-large {
+        font-size: 4rem;
+        color: #3b82f6;
+        margin-bottom: 1.5rem;
+        filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.3));
+      }
+
+      .impact-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+      }
+
+      .impact-desc {
+        color: #cbd5e1;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+
+      .highlight-badge {
+        display: inline-block;
+        background-color: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+
+      .glow-effect {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: #3b82f6;
+        filter: blur(120px);
+        opacity: 0.15;
+        z-index: -1;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+      }
+
+      /* Bottom Status Bar */
+      .status-bar {
+        margin-top: auto;
+        display: flex;
+        gap: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #334155;
+        color: #64748b;
+        font-size: 0.85rem;
+      }
+
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <!-- Background -->
+      <div class="bg-geometric"></div>
+      <div class="content-wrapper">
+        <!-- Header -->
+        <div class="header-section">
+          <div class="header-icon">
+            <i class="fa-solid fa-flag-checkered"></i>
+          </div>
+          <div>
+            <p
+              class="text-blue-400 font-mono text-sm tracking-widest uppercase font-bold mb-1"
+            >
+              PROJECT SUMMARY
+            </p>
+            <h1 class="text-4xl font-bold text-white font-inter m-0">
+              Conclusion
+            </h1>
+          </div>
+        </div>
+        <!-- Main Layout -->
+        <div class="main-layout">
+          <!-- Left Column: Key Points -->
+          <div class="left-column">
+            <!-- Point 1 -->
+            <div class="summary-card">
+              <div class="check-icon">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="summary-text">
+                <h3>Automated Fall Detection</h3>
+                <p>
+                  Utilizes smartphone accelerometer and gyroscope data to detect
+                  falls instantly without manual input.
+                </p>
+              </div>
+            </div>
+            <!-- Point 2 -->
+            <div class="summary-card">
+              <div class="check-icon">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div class="summary-text">
+                <h3>Real-Time Location Alerts</h3>
+                <p>
+                  Sends immediate SOS messages containing precise GPS
+                  coordinates to emergency contacts.
+                </p>
+              </div>
+            </div>
+            <!-- Point 3 -->
+            <div class="summary-card">
+              <div class="check-icon">
+                <i class="fa-solid fa-volume-high"></i>
+              </div>
+              <div class="summary-text">
+                <h3>Accessible Feedback</h3>
+                <p>
+                  Provides clear voice prompts and haptic vibration feedback
+                  designed specifically for visually impaired users.
+                </p>
+              </div>
+            </div>
+            <!-- Point 4 -->
+            <div class="summary-card">
+              <div class="check-icon">
+                <i class="fa-solid fa-hand-pointer"></i>
+              </div>
+              <div class="summary-text">
+                <h3>Minimal Interaction</h3>
+                <p>
+                  Designed for zero-touch emergency activation with a simple
+                  cancellation mechanism for false alarms.
+                </p>
+              </div>
+            </div>
+          </div>
+          <!-- Right Column: Impact Statement -->
+          <div class="right-column">
+            <div class="impact-box">
+              <div class="glow-effect"></div>
+              <i class="fa-solid fa-shield-heart impact-icon-large"></i>
+              <h2 class="impact-title">Our Goal</h2>
+              <p class="impact-desc">
+                Delivering greater safety, independence, and peace of mind for
+                visually impaired individuals through accessible technology.
+              </p>
+              <span class="highlight-badge">Tech for Good</span>
+            </div>
+          </div>
+        </div>
+        <!-- Footer Status -->
+        <div class="status-bar">
+          <div class="status-item">
+            <div class="status-dot bg-green-500"></div>
+            <span>System Ready</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot bg-blue-500"></div>
+            <span>Scalable Architecture</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot bg-purple-500"></div>
+            <span>Inclusive Design</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

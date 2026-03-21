@@ -54,3 +54,34 @@ setInterval(() => {
   accelDisplay.innerText = (Math.random() * 1.2).toFixed(2) + "g";
   gyroDisplay.innerText = (Math.random() * 0.5).toFixed(2) + "°";
 }, 200);
+async function startSensors() {
+  // Check if we are on iOS (which requires explicit permission)
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    try {
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission === "granted") {
+        window.addEventListener("devicemotion", handleMotion);
+        console.log("Sensors Gridded!");
+      }
+    } catch (error) {
+      console.error("Sensor permission denied:", error);
+    }
+  } else {
+    // Non-iOS browsers (Android/Desktop)
+    window.addEventListener("devicemotion", handleMotion);
+  }
+}
+
+// Map the raw browser data to your FallDetector class
+function handleMotion(event) {
+  const accel = event.accelerationIncludingGravity;
+  const gyro = event.rotationRate;
+
+  if (accel && gyro) {
+    // Pass the real data into your detector
+    detector.processSensorData(
+      { x: accel.x, y: accel.y, z: accel.z },
+      { x: gyro.alpha, y: gyro.beta, z: gyro.gamma },
+    );
+  }
+}

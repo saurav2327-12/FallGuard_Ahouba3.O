@@ -1,1215 +1,671 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FallGuard — Fall Detection</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --bg: #0a0c0f;
-        --bg2: #111318;
-        --bg3: #181c22;
-        --border: rgba(255, 255, 255, 0.07);
-        --text: #e8eaf0;
-        --muted: #6b7280;
-        --accent: #00e5a0;
-        --accent-dim: rgba(0, 229, 160, 0.12);
-        --danger: #ff4d6d;
-        --danger-dim: rgba(255, 77, 109, 0.12);
-        --warn: #fbbf24;
-        --blue: #60a5fa;
-        --mono: "JetBrains Mono", monospace;
-        --sans: "DM Sans", sans-serif;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      html,
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: var(--sans);
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FallGuard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+:root{
+  --bg:#05000f;--surf:#0d0020;--surf2:#160030;--bdr:#4a1a80;
+  --acc:#ff2d78;--acc2:#bf00ff;--acc3:#00f0ff;
+  --red:#ff2d78;--warn:#ffcc00;--ok:#39ff14;--txt:#f0e6ff;--muted:#8060a0;
+  --mono:'Share Tech Mono',monospace;--sans:'Rajdhani',sans-serif;--display:'Orbitron',sans-serif;
+  --glow-pink:0 0 10px #ff2d78,0 0 20px #ff2d7866;
+  --glow-purple:0 0 10px #bf00ff,0 0 20px #bf00ff66;
+  --glow-cyan:0 0 10px #00f0ff,0 0 20px #00f0ff66;
+  --glow-green:0 0 8px #39ff14,0 0 16px #39ff1466;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;overflow-x:hidden;font-size:15px;perspective:1000px}
+body::before{content:'';position:fixed;bottom:0;left:0;right:0;height:55vh;background:linear-gradient(transparent,rgba(191,0,255,.06));background-image:linear-gradient(rgba(191,0,255,.25) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.2) 1px,transparent 1px);background-size:60px 60px;transform:rotateX(70deg) scaleY(2.5) translateY(30%);transform-origin:bottom center;pointer-events:none;z-index:0;animation:gridScroll 6s linear infinite;}
+@keyframes gridScroll{0%{background-position:0 0}100%{background-position:0 60px}}
+body::after{content:'';position:fixed;inset:0;background-image:radial-gradient(1px 1px at 20% 15%,rgba(255,255,255,.7),transparent),radial-gradient(1px 1px at 60% 25%,rgba(191,0,255,.8),transparent),radial-gradient(1px 1px at 80% 10%,rgba(0,240,255,.7),transparent),radial-gradient(1px 1px at 40% 40%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 10% 55%,rgba(255,45,120,.6),transparent),radial-gradient(1px 1px at 90% 60%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 35% 80%,rgba(0,240,255,.5),transparent),radial-gradient(1px 1px at 70% 75%,rgba(191,0,255,.6),transparent),radial-gradient(2px 2px at 50% 5%,rgba(255,255,255,.9),transparent),radial-gradient(2px 2px at 15% 90%,rgba(255,45,120,.8),transparent);pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:20px 16px}
+header{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;margin-bottom:24px;flex-wrap:wrap;gap:10px;border-bottom:1px solid rgba(191,0,255,.3);position:relative;}
+header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--acc2),var(--acc),var(--acc3),transparent);box-shadow:0 0 12px rgba(255,45,120,.5);}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-icon{width:46px;height:46px;background:linear-gradient(135deg,var(--acc),var(--acc2));border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:var(--glow-pink),0 8px 20px rgba(0,0,0,.6);transform:perspective(200px) rotateX(10deg) rotateY(-10deg);transition:transform .3s ease;}
+.logo-icon:hover{transform:perspective(200px) rotateX(-5deg) rotateY(5deg);}
+.logo h1{font-size:1.4rem;font-weight:900;letter-spacing:3px;font-family:var(--display);background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 8px rgba(255,45,120,.4));}
+.logo span{font-size:.58rem;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:3px}
+.badge{display:flex;align-items:center;gap:7px;padding:5px 13px;border-radius:2px;font-family:var(--mono);font-size:.65rem}
+.badge-ok{background:rgba(57,255,20,.06);border:1px solid rgba(57,255,20,.35);color:var(--ok);box-shadow:inset 0 0 12px rgba(57,255,20,.08),0 4px 12px rgba(0,0,0,.4);transform:perspective(100px) rotateX(8deg);}
+.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite;box-shadow:var(--glow-green)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.tabs{display:flex;gap:3px;background:rgba(13,0,32,.8);border:1px solid var(--bdr);border-radius:4px;padding:4px;margin-bottom:24px;flex-wrap:wrap;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 20px rgba(191,0,255,.1);transform:perspective(800px) rotateX(2deg);transform-origin:top center;}
+.tab{padding:8px 18px;border:none;background:transparent;color:var(--muted);font-family:var(--display);font-size:.65rem;font-weight:700;border-radius:2px;cursor:pointer;transition:all .25s;letter-spacing:1px;text-transform:uppercase;}
+.tab.active{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:var(--glow-pink),0 4px 15px rgba(0,0,0,.5);transform:translateY(-2px);}
+.tab:hover:not(.active){color:var(--acc3);background:rgba(0,240,255,.06);transform:translateY(-1px)}
+.panel{display:none}.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px) perspective(600px) rotateX(3deg)}to{opacity:1;transform:translateY(0) perspective(600px) rotateX(0)}}
+.card{background:linear-gradient(160deg,rgba(22,0,48,.95),rgba(13,0,32,.98));border:1px solid rgba(74,26,128,.6);border-radius:6px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.7),0 2px 0 rgba(255,255,255,.04) inset,0 -2px 0 rgba(0,0,0,.3) inset;transform:perspective(1000px) rotateX(1deg);transition:transform .3s ease,box-shadow .3s ease;}
+.card:hover{transform:perspective(1000px) rotateX(0deg) translateY(-2px);box-shadow:0 16px 50px rgba(0,0,0,.8),0 0 20px rgba(191,0,255,.15),0 2px 0 rgba(255,255,255,.06) inset;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 5%,var(--acc2) 30%,var(--acc3) 70%,transparent 95%);box-shadow:0 0 8px rgba(191,0,255,.4);}
+.card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,240,255,.2),transparent);}
+.card-lbl{font-size:.6rem;font-family:var(--display);text-transform:uppercase;letter-spacing:2.5px;color:var(--acc3);margin-bottom:14px;display:flex;align-items:center;gap:8px;text-shadow:var(--glow-cyan);}
+.card-lbl::before{content:'';width:3px;height:14px;background:var(--acc3);border-radius:0;box-shadow:var(--glow-cyan)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border:none;border-radius:3px;font-family:var(--display);font-size:.68rem;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px;position:relative;}
+.btn-acc{background:linear-gradient(180deg,rgba(255,80,140,.9),var(--acc) 40%,rgba(180,0,80,1));color:#fff;box-shadow:0 6px 0 rgba(120,0,40,1),0 8px 20px rgba(255,45,120,.4),var(--glow-pink);border:1px solid rgba(255,100,160,.3);}
+.btn-acc:hover{transform:translateY(-2px);box-shadow:0 8px 0 rgba(120,0,40,1),0 12px 28px rgba(255,45,120,.5)}
+.btn-acc:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(120,0,40,1),0 4px 10px rgba(255,45,120,.3)}
+.btn-acc:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+.btn-ghost{background:linear-gradient(180deg,rgba(0,240,255,.08),rgba(0,240,255,.03));color:var(--acc3);border:1px solid rgba(0,240,255,.4);box-shadow:0 4px 0 rgba(0,100,120,.8),0 6px 15px rgba(0,240,255,.15),inset 0 1px 0 rgba(0,240,255,.15);}
+.btn-ghost:hover{transform:translateY(-2px);background:rgba(0,240,255,.12);box-shadow:0 6px 0 rgba(0,100,120,.8),var(--glow-cyan)}
+.btn-ghost:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,100,120,.8)}
+.btn-red{background:linear-gradient(180deg,rgba(255,80,120,.15),rgba(255,45,120,.08));color:var(--red);border:1px solid rgba(255,45,120,.45);box-shadow:0 4px 0 rgba(100,0,30,.8),inset 0 1px 0 rgba(255,80,120,.2);}
+.btn-red:hover{background:var(--red);color:#fff;box-shadow:0 6px 0 rgba(100,0,30,.8),var(--glow-pink)}
+.btn-red:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(100,0,30,.8)}
+.result-box{background:linear-gradient(180deg,rgba(13,0,32,.9),rgba(5,0,15,.95));border:1px solid var(--bdr);border-radius:4px;padding:18px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:120px;transition:all .4s;box-shadow:inset 0 2px 0 rgba(255,255,255,.04),inset 0 -2px 0 rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.5);}
+.result-box.fall{border-color:var(--red);box-shadow:0 0 25px rgba(255,45,120,.25),inset 0 0 40px rgba(255,45,120,.07),0 8px 24px rgba(0,0,0,.5)}
+.result-box.stumble{border-color:var(--warn);box-shadow:0 0 20px rgba(255,204,0,.2),inset 0 0 30px rgba(255,204,0,.05),0 8px 24px rgba(0,0,0,.5)}
+.result-box.normal{border-color:var(--ok);box-shadow:0 0 20px rgba(57,255,20,.18),inset 0 0 30px rgba(57,255,20,.05),0 8px 24px rgba(0,0,0,.5)}
+.res-code{font-size:2.4rem;font-weight:900;letter-spacing:3px;font-family:var(--display)}
+.res-code.fall{color:var(--red);text-shadow:var(--glow-pink),0 4px 8px rgba(0,0,0,.5)}
+.res-code.stumble{color:var(--warn);text-shadow:0 0 10px #ffcc00,0 4px 8px rgba(0,0,0,.5)}
+.res-code.normal{color:var(--ok);text-shadow:var(--glow-green),0 4px 8px rgba(0,0,0,.5)}
+.prob-list{display:flex;flex-direction:column;gap:8px}
+.pb-item{display:flex;align-items:center;gap:8px}
+.pb-lbl{font-family:var(--mono);font-size:.6rem;color:var(--muted);width:32px;flex-shrink:0}
+.pb-track{flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:0;overflow:hidden;border:1px solid rgba(255,45,120,.15);box-shadow:inset 0 1px 0 rgba(0,0,0,.3)}
+.pb-fill{height:100%;border-radius:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .5s ease;box-shadow:var(--glow-pink)}
+.pb-val{font-family:var(--mono);font-size:.6rem;color:var(--muted);width:34px;text-align:right}
+.sg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sg-item{background:linear-gradient(180deg,rgba(22,0,48,.8),rgba(13,0,32,.9));border:1px solid rgba(74,26,128,.5);border-radius:4px;padding:10px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);transform:perspective(200px) rotateX(3deg);transition:transform .2s;}
+.sg-item:hover{transform:perspective(200px) rotateX(0deg) translateY(-2px)}
+.sg-axis{font-family:var(--mono);font-size:.52rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px;letter-spacing:1px}
+.sg-val{font-family:var(--mono);font-size:.9rem;font-weight:700}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-lbl{font-family:var(--mono);font-size:.56rem;color:var(--muted);width:84px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.bar-track{flex:1;height:5px;background:rgba(255,255,255,.04);border-radius:0;overflow:hidden;box-shadow:inset 0 1px 0 rgba(0,0,0,.4)}
+.bar-fill{height:100%;border-radius:0;transition:width .25s ease}
+.bar-val{font-family:var(--mono);font-size:.58rem;color:var(--txt);width:42px;text-align:right}
+.wave-box{background:rgba(5,0,15,.9);border:1px solid rgba(74,26,128,.4);border-radius:4px;padding:10px;margin-bottom:12px;box-shadow:inset 0 2px 8px rgba(0,0,0,.5);}
+.log-row{font-family:var(--mono);font-size:.62rem;color:var(--muted);padding:4px 0;border-bottom:1px solid rgba(74,26,128,.3);display:flex;gap:8px}
+.log-t{color:rgba(128,96,160,.4);flex-shrink:0}
+.spin{width:16px;height:16px;border:2px solid rgba(255,45,120,.2);border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.url-row{display:flex;gap:8px}
+.url-inp{flex:1;background:rgba(5,0,15,.9);border:1px solid rgba(74,26,128,.5);border-radius:2px;padding:8px 12px;color:var(--txt);font-family:var(--mono);font-size:.7rem;outline:none;box-shadow:inset 0 2px 6px rgba(0,0,0,.4);transition:border-color .2s,box-shadow .2s;}
+.url-inp:focus{border-color:var(--acc3);box-shadow:inset 0 2px 6px rgba(0,0,0,.4),0 0 8px rgba(0,240,255,.15)}
+select,input[type=number]{background:rgba(5,0,15,.9);border:1px solid rgba(74,26,128,.5);border-radius:2px;padding:7px 10px;color:var(--txt);font-family:var(--mono);font-size:.7rem;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.3);}
+select:focus,input[type=number]:focus{border-color:var(--acc3)}
+.field-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.field-row label{font-family:var(--mono);font-size:.58rem;color:var(--muted);width:110px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.form-g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.field label{display:block;font-size:.56rem;font-family:var(--mono);color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field input{width:100%;background:rgba(5,0,15,.9);border:1px solid rgba(74,26,128,.5);border-radius:2px;padding:8px 10px;color:var(--txt);font-family:var(--mono);font-size:.76rem;outline:none;box-shadow:inset 0 2px 5px rgba(0,0,0,.4);transition:border-color .2s;}
+.field input:focus{border-color:var(--acc3);box-shadow:inset 0 2px 5px rgba(0,0,0,.4),0 0 8px rgba(0,240,255,.1)}
+.drop-zone{border:2px dashed rgba(74,26,128,.6);border-radius:4px;padding:36px;text-align:center;cursor:pointer;background:repeating-linear-gradient(45deg,transparent,transparent 12px,rgba(191,0,255,.015) 12px,rgba(191,0,255,.015) 24px);transition:all .2s;box-shadow:inset 0 2px 20px rgba(0,0,0,.4);}
+.drop-zone:hover{border-color:var(--acc3);background:rgba(0,240,255,.03);box-shadow:inset 0 0 30px rgba(0,240,255,.05),0 0 15px rgba(0,240,255,.1)}
+.tbl-wrap{overflow-x:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.68rem}
+th{background:rgba(22,0,48,.9);color:var(--acc3);text-transform:uppercase;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);font-size:.58rem}
+td{padding:8px 12px;border-bottom:1px solid rgba(74,26,128,.3)}
+tr:hover td{background:rgba(191,0,255,.04)}
+.tbadge{display:inline-block;padding:2px 9px;border-radius:2px;font-size:.58rem;font-weight:700;font-family:var(--mono)}
+.tbadge.fall{background:rgba(255,45,120,.12);color:var(--red);border:1px solid rgba(255,45,120,.3)}
+.tbadge.stumble{background:rgba(255,204,0,.1);color:var(--warn);border:1px solid rgba(255,204,0,.3)}
+.tbadge.normal{background:rgba(57,255,20,.08);color:var(--ok);border:1px solid rgba(57,255,20,.25)}
+.dist-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(74,26,128,.3)}
+.dist-item:last-child{border:none}
+.dist-code{font-family:var(--mono);font-size:.7rem;color:var(--acc);width:36px;text-shadow:var(--glow-pink)}
+.dist-name{font-size:.8rem;flex:1}
+.dist-bar-wrap{width:80px;background:rgba(255,255,255,.04);border-radius:0;height:4px;box-shadow:inset 0 1px 0 rgba(0,0,0,.3)}
+.dist-bar{height:100%;border-radius:0}
+.dist-cnt{font-family:var(--mono);font-size:.65rem;color:var(--muted);width:34px;text-align:right}
+#sos-overlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(2,0,8,.94);align-items:center;justify-content:center;backdrop-filter:blur(6px);perspective:800px;}
+.sos-box{background:linear-gradient(160deg,#1e0040,#0a0018,#1a0030);border:2px solid var(--red);border-radius:6px;padding:28px;max-width:320px;width:90%;text-align:center;animation:sosglow 1s ease-in-out infinite alternate;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(255,45,120,.5),0 20px 60px rgba(0,0,0,.8),inset 0 2px 0 rgba(255,100,160,.15),inset 0 -2px 0 rgba(0,0,0,.5);transform:perspective(600px) rotateX(4deg);}
+.sos-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--acc2),var(--red),var(--acc3),var(--red),var(--acc2));background-size:200%;animation:shimmer 1.5s linear infinite;box-shadow:0 0 12px rgba(255,45,120,.6);}
+.sos-box::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.03) 0%,transparent 40%);pointer-events:none;}
+@keyframes shimmer{0%{background-position:200%}100%{background-position:-200%}}
+@keyframes sosglow{from{box-shadow:0 0 30px rgba(255,45,120,.4),0 20px 60px rgba(0,0,0,.8),inset 0 2px 0 rgba(255,100,160,.1)}to{box-shadow:0 0 60px rgba(255,45,120,.8),0 0 100px rgba(255,45,120,.2),0 20px 60px rgba(0,0,0,.8),inset 0 2px 0 rgba(255,100,160,.2)}}
+.sos-icon{font-size:2.8rem;margin-bottom:6px;animation:shake .4s ease-in-out infinite alternate;filter:drop-shadow(0 0 12px #ff2d78);display:block}
+@keyframes shake{from{transform:rotate(-7deg) scale(1)}to{transform:rotate(7deg) scale(1.1)}}
+.sos-title{font-size:1.5rem;font-weight:900;color:var(--red);margin-bottom:6px;font-family:var(--display);letter-spacing:4px;text-transform:uppercase;text-shadow:var(--glow-pink),0 4px 8px rgba(0,0,0,.6);}
+.sos-ring-wrap{position:relative;width:90px;height:90px;margin:12px auto}
+.sos-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:900;color:var(--red);font-family:var(--display);text-shadow:var(--glow-pink),0 4px 8px rgba(0,0,0,.6);}
+.sos-lbl{font-family:var(--mono);font-size:.6rem;color:var(--muted);margin-bottom:12px;letter-spacing:1px}
+.voice-status{font-family:var(--mono);font-size:.63rem;color:var(--acc3);margin-bottom:4px;min-height:16px;text-shadow:var(--glow-cyan)}
+.voice-heard{font-family:var(--mono);font-size:.68rem;color:var(--acc);margin-bottom:10px;min-height:16px;font-style:italic;text-shadow:var(--glow-pink)}
+.gps-status{font-family:var(--mono);font-size:.56rem;color:var(--muted);margin-bottom:12px}
+.sos-btn-send{width:100%;padding:12px;background:linear-gradient(180deg,rgba(255,80,140,.95),var(--red) 50%,rgba(160,0,60,1));border:1px solid rgba(255,100,160,.3);border-radius:3px;color:#fff;font-family:var(--display);font-weight:700;font-size:.78rem;cursor:pointer;margin-bottom:10px;letter-spacing:2px;text-transform:uppercase;box-shadow:0 6px 0 rgba(100,0,30,1),0 8px 25px rgba(255,45,120,.5),var(--glow-pink);transition:all .15s;}
+.sos-btn-send:hover{transform:translateY(-2px);box-shadow:0 8px 0 rgba(100,0,30,1),0 12px 30px rgba(255,45,120,.6)}
+.sos-btn-send:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(100,0,30,1)}
+.sos-btn-cancel{width:100%;padding:10px;background:transparent;border:1px solid rgba(57,255,20,.4);border-radius:3px;color:var(--ok);font-family:var(--display);font-weight:600;font-size:.72rem;cursor:pointer;letter-spacing:1px;text-transform:uppercase;box-shadow:0 4px 0 rgba(0,60,0,.8),inset 0 1px 0 rgba(57,255,20,.1);transition:all .15s;text-shadow:var(--glow-green);}
+.sos-btn-cancel:hover{background:rgba(57,255,20,.08);transform:translateY(-1px);box-shadow:0 5px 0 rgba(0,60,0,.8),var(--glow-green)}
+.sos-btn-cancel:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,60,0,.8)}
+@media(max-width:680px){.g2,.form-g{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}.sg-grid{grid-template-columns:repeat(3,1fr)}.card{transform:none}.tabs{transform:none}.badge-ok{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
 
-      /* ── GRID NOISE BACKGROUND ── */
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(0, 229, 160, 0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0, 229, 160, 0.02) 1px, transparent 1px);
-        background-size: 40px 40px;
-        pointer-events: none;
-        z-index: 0;
-      }
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#x1F6E1;&#xFE0F;</div>
+    <div><h1>FallGuard</h1><span>Motion Intelligence</span></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div class="badge badge-ok"><div class="pulse"></div>Live</div>
+    <button class="btn btn-red" style="padding:5px 13px;font-size:.65rem" onclick="triggerSOS('FOL',95)">TEST SOS</button>
+  </div>
+</header>
 
-      .container {
-        position: relative;
-        z-index: 1;
-        max-width: 480px;
-        margin: 0 auto;
-        padding: 24px 16px 40px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('live',this)">&#x1F4F1; Live Sensor</button>
+  <button class="tab" onclick="switchTab('manual',this)">Manual Input</button>
+  <button class="tab" onclick="switchTab('history',this)">&#x1F4CD; Fall History</button>
+</div>
 
-      /* ── HEADER ── */
-      .header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--border);
-      }
-      .logo {
-        font-family: var(--mono);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        color: var(--accent);
-        text-transform: uppercase;
-      }
-      .logo span {
-        color: var(--muted);
-        font-weight: 400;
-      }
-      .status-pill {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--muted);
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 4px 10px;
-      }
-      .status-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--muted);
-        transition: background 0.3s;
-      }
-      .status-dot.active {
-        background: var(--accent);
-        box-shadow: 0 0 8px var(--accent);
-        animation: pulse 1.5s infinite;
-      }
-      .status-dot.alert {
-        background: var(--danger);
-        box-shadow: 0 0 8px var(--danger);
-        animation: pulse 0.6s infinite;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-      }
-
-      /* ── BIG STATUS CARD ── */
-      .main-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 28px 24px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 14px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        transition: border-color 0.3s;
-      }
-      .main-card.monitoring {
-        border-color: rgba(0, 229, 160, 0.25);
-      }
-      .main-card.fall {
-        border-color: rgba(255, 77, 109, 0.6);
-        background: rgba(255, 77, 109, 0.04);
-      }
-      .main-card.fall::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 20px;
-        box-shadow: inset 0 0 40px rgba(255, 77, 109, 0.12);
-        pointer-events: none;
-      }
-
-      .shield-icon {
-        width: 72px;
-        height: 72px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: var(--accent-dim);
-        border: 1px solid rgba(0, 229, 160, 0.2);
-        font-size: 32px;
-        transition: all 0.3s;
-      }
-      .shield-icon.fall {
-        background: var(--danger-dim);
-        border-color: rgba(255, 77, 109, 0.4);
-        animation: shake 0.5s ease-in-out;
-      }
-      @keyframes shake {
-        0%,
-        100% {
-          transform: translateX(0);
-        }
-        20% {
-          transform: translateX(-8px) rotate(-3deg);
-        }
-        40% {
-          transform: translateX(8px) rotate(3deg);
-        }
-        60% {
-          transform: translateX(-5px) rotate(-2deg);
-        }
-        80% {
-          transform: translateX(5px) rotate(2deg);
-        }
-      }
-
-      .main-status {
-        font-family: var(--mono);
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        color: var(--accent);
-        transition: color 0.3s;
-      }
-      .main-status.fall {
-        color: var(--danger);
-      }
-      .main-status.idle {
-        color: var(--muted);
-      }
-
-      .main-sub {
-        font-size: 13px;
-        color: var(--muted);
-        line-height: 1.5;
-        max-width: 280px;
-      }
-
-      /* ── START BUTTON ── */
-      .btn-start {
-        font-family: var(--mono);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        background: var(--accent);
-        color: #000;
-        border: none;
-        border-radius: 12px;
-        padding: 14px 36px;
-        cursor: pointer;
-        transition:
-          opacity 0.2s,
-          transform 0.15s;
-      }
-      .btn-start:hover {
-        opacity: 0.88;
-        transform: translateY(-1px);
-      }
-      .btn-start:active {
-        transform: translateY(0);
-      }
-      .btn-start.stop {
-        background: transparent;
-        color: var(--danger);
-        border: 1px solid rgba(255, 77, 109, 0.4);
-      }
-      .btn-reset {
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--muted);
-        background: transparent;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 20px;
-        cursor: pointer;
-        transition:
-          color 0.2s,
-          border-color 0.2s;
-      }
-      .btn-reset:hover {
-        color: var(--text);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      /* ── AXES GRID ── */
-      .axes-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
-      }
-      .axis-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 14px 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .axis-label {
-        font-family: var(--mono);
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-      .axis-label.x {
-        color: var(--danger);
-      }
-      .axis-label.y {
-        color: var(--accent);
-      }
-      .axis-label.z {
-        color: var(--blue);
-      }
-      .axis-value {
-        font-family: var(--mono);
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-      }
-      .axis-bar-track {
-        height: 4px;
-        background: var(--bg3);
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      .axis-bar {
-        height: 100%;
-        border-radius: 2px;
-        width: 0%;
-        transition: width 0.1s;
-      }
-      .axis-bar.x {
-        background: var(--danger);
-      }
-      .axis-bar.y {
-        background: var(--accent);
-      }
-      .axis-bar.z {
-        background: var(--blue);
-      }
-
-      /* ── SMA CARD ── */
-      .sma-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 18px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .sma-left {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .sma-title {
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .sma-value {
-        font-family: var(--mono);
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--text);
-        transition: color 0.15s;
-      }
-      .sma-value.high {
-        color: var(--warn);
-      }
-      .sma-value.danger {
-        color: var(--danger);
-      }
-      .sma-unit {
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      .threshold-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 4px;
-      }
-      .threshold-label {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      .threshold-val {
-        font-family: var(--mono);
-        font-size: 13px;
-        color: var(--danger);
-        font-weight: 700;
-      }
-
-      /* ── WAVEFORM CANVAS ── */
-      .wave-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-        position: relative;
-      }
-      .wave-header {
-        padding: 14px 18px 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .wave-title {
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .wave-legend {
-        display: flex;
-        gap: 12px;
-      }
-      .wave-legend-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-      }
-      .wave-legend-dot {
-        width: 8px;
-        height: 3px;
-        border-radius: 2px;
-      }
-      canvas#waveform {
-        display: block;
-        width: 100%;
-        height: 100px;
-      }
-
-      /* ── EVENTS LOG ── */
-      .log-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-      }
-      .log-header {
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border);
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        text-transform: uppercase;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .log-count {
-        background: var(--danger-dim);
-        color: var(--danger);
-        border-radius: 8px;
-        padding: 2px 8px;
-        font-size: 10px;
-        font-weight: 700;
-        display: none;
-      }
-      .log-count.visible {
-        display: block;
-      }
-      .log-body {
-        max-height: 160px;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--border) transparent;
-      }
-      .log-empty {
-        padding: 20px;
-        text-align: center;
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--muted);
-      }
-      .log-entry {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 18px;
-        border-bottom: 1px solid var(--border);
-        animation: fadeIn 0.3s ease;
-      }
-      .log-entry:last-child {
-        border-bottom: none;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-6px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .log-icon {
-        font-size: 16px;
-      }
-      .log-info {
-        flex: 1;
-      }
-      .log-msg {
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--danger);
-        font-weight: 700;
-      }
-      .log-detail {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .log-time {
-        font-family: var(--mono);
-        font-size: 10px;
-        color: var(--muted);
-        white-space: nowrap;
-      }
-
-      /* ── SETTINGS ── */
-      .settings-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 18px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .settings-title {
-        font-family: var(--mono);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .setting-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      .setting-label {
-        font-size: 13px;
-        color: var(--text);
-      }
-      .setting-sub {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .setting-ctrl {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100px;
-        height: 4px;
-        background: var(--bg3);
-        border-radius: 2px;
-        outline: none;
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: var(--accent);
-        cursor: pointer;
-      }
-      .setting-val {
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--accent);
-        min-width: 42px;
-        text-align: right;
-      }
-
-      /* ── NO SUPPORT ── */
-      .no-support {
-        text-align: center;
-        padding: 40px 20px;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-      }
-      .no-support.show {
-        display: flex;
-      }
-      .no-support h2 {
-        font-family: var(--mono);
-        font-size: 16px;
-        color: var(--danger);
-      }
-      .no-support p {
-        font-size: 13px;
-        color: var(--muted);
-        line-height: 1.6;
-        max-width: 300px;
-      }
-
-      /* ── FALL ALERT OVERLAY ── */
-      .fall-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(255, 77, 109, 0.08);
-        backdrop-filter: blur(2px);
-        z-index: 100;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        animation: overlayIn 0.3s ease;
-      }
-      .fall-overlay.show {
-        display: flex;
-      }
-      @keyframes overlayIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-      .fall-modal {
-        background: var(--bg2);
-        border: 1px solid rgba(255, 77, 109, 0.5);
-        border-radius: 24px;
-        padding: 36px 28px;
-        max-width: 340px;
-        width: 90%;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 14px;
-        animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-      @keyframes modalIn {
-        from {
-          transform: scale(0.8);
-          opacity: 0;
-        }
-        to {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-      .fall-modal-icon {
-        font-size: 52px;
-        animation: shake 0.5s 0.2s ease-in-out;
-      }
-      .fall-modal-title {
-        font-family: var(--mono);
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--danger);
-        letter-spacing: 0.04em;
-      }
-      .fall-modal-sub {
-        font-size: 14px;
-        color: var(--muted);
-        line-height: 1.6;
-      }
-      .fall-modal-sma {
-        font-family: var(--mono);
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--warn);
-      }
-      .countdown {
-        font-family: var(--mono);
-        font-size: 13px;
-        color: var(--muted);
-      }
-      .countdown-num {
-        color: var(--danger);
-        font-weight: 700;
-        font-size: 20px;
-      }
-      .btn-dismiss {
-        font-family: var(--mono);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        background: var(--danger);
-        color: #fff;
-        border: none;
-        border-radius: 12px;
-        padding: 14px 36px;
-        cursor: pointer;
-        width: 100%;
-        transition: opacity 0.2s;
-      }
-      .btn-dismiss:hover {
-        opacity: 0.85;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- FALL OVERLAY -->
-    <div class="fall-overlay" id="fallOverlay">
-      <div class="fall-modal">
-        <div class="fall-modal-icon">🚨</div>
-        <div class="fall-modal-title">FALL DETECTED</div>
-        <div class="fall-modal-sub">
-          A sudden impact was detected.<br />Are you okay?
+<!-- LIVE PANEL -->
+<div id="panel-live" class="panel active">
+  <div class="g2">
+    <div>
+      <div class="card">
+        <div class="card-lbl">Sensor stream</div>
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.6">Open on your phone. Tap Start — browser reads accelerometer &amp; gyroscope and classifies activity every ~2.5 s.</p>
+        <div id="live-status" style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:12px">Status: Idle</div>
+        <div id="ctrl-off">
+          <button class="btn btn-acc" onclick="startSensors()">&#x25B6; Start Detection</button>
         </div>
+        <div id="ctrl-on" style="display:none">
+          <div class="wave-box"><canvas id="liveWave" style="width:100%;height:80px;display:block"></canvas></div>
+          <div class="bar-row"><span class="bar-lbl">acc_max</span><div class="bar-track"><div class="bar-fill" id="lb-acc" style="background:#378ADD;width:0%"></div></div><span class="bar-val" id="lv-acc">—</span></div>
+          <div class="bar-row"><span class="bar-lbl">gyro_max</span><div class="bar-track"><div class="bar-fill" id="lb-gyro" style="background:#1D9E75;width:0%"></div></div><span class="bar-val" id="lv-gyro">—</span></div>
+          <div class="bar-row"><span class="bar-lbl">lin_max</span><div class="bar-track"><div class="bar-fill" id="lb-lin" style="background:#EF9F27;width:0%"></div></div><span class="bar-val" id="lv-lin">—</span></div>
+          <div class="bar-row"><span class="bar-lbl">acc_kurtosis</span><div class="bar-track"><div class="bar-fill" id="lb-kurt" style="background:#7F77DD;width:0%"></div></div><span class="bar-val" id="lv-kurt">—</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="stopSensors()">&#x25A0; Stop</button>
+            <span id="sample-ct" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)">0 samples</span>
+            <span id="win-badge" style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">filling…</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(255,61,107,.25)">
+        <div class="card-lbl" style="color:var(--red)">SOS Settings</div>
+        <div class="field-row"><label>Contact name</label><input id="sos-name" style="flex:1" placeholder="e.g. Mom" value="Mom"/></div>
+        <div class="field-row"><label>Min confidence</label>
+          <select id="sos-threshold" style="flex:1">
+            <option value="55">55%</option><option value="70">70%</option>
+            <option value="80" selected>80% — recommended</option><option value="90">90%</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Countdown</label>
+          <select id="sos-countdown" style="flex:1">
+            <option value="5">5 sec</option><option value="10" selected>10 sec</option>
+            <option value="15">15 sec</option><option value="20">20 sec</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Backend URL</div>
+        <div class="url-row">
+          <input class="url-inp" id="api-url" value="https://quantity-handed-britney-glucose.trycloudflare.com/api/predict"/>
+          <button class="btn btn-ghost" onclick="testConn()" style="white-space:nowrap">Test</button>
+        </div>
+        <div id="conn-msg" style="font-family:var(--mono);font-size:.65rem;margin-top:6px;color:var(--muted)"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-lbl">Raw sensors</div>
+        <div class="sg-grid">
+          <div class="sg-item"><div class="sg-axis">Acc X</div><div class="sg-val" id="sg-ax" style="color:#378ADD">—</div></div>
+          <div class="sg-item"><div class="sg-axis">Acc Y</div><div class="sg-val" id="sg-ay" style="color:#1D9E75">—</div></div>
+          <div class="sg-item"><div class="sg-axis">Acc Z</div><div class="sg-val" id="sg-az" style="color:#EF9F27">—</div></div>
+          <div class="sg-item"><div class="sg-axis">Gyro X</div><div class="sg-val" id="sg-gx" style="color:var(--acc)">—</div></div>
+          <div class="sg-item"><div class="sg-axis">Gyro Y</div><div class="sg-val" id="sg-gy" style="color:var(--acc)">—</div></div>
+          <div class="sg-item"><div class="sg-axis">Gyro Z</div><div class="sg-val" id="sg-gz" style="color:var(--acc)">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Live prediction</div>
+        <div class="result-box" id="live-result"><span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">Start detection to predict</span></div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Probabilities</div>
+        <div class="prob-list" id="live-probs"><span style="font-family:var(--mono);font-size:.65rem;color:var(--muted)">No predictions yet</span></div>
+      </div>
+      <div class="card">
+        <div class="card-lbl">Log</div>
+        <div id="live-log" style="max-height:130px;overflow-y:auto"><span style="font-family:var(--mono);font-size:.65rem;color:var(--muted)">Nothing yet</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL PANEL -->
+<div id="panel-manual" class="panel">
+  <div class="g2">
+    <div class="card">
+      <div class="card-lbl">Sensor features</div>
+      <div id="manual-alert"></div>
+      <div class="form-g">
+        <div class="field"><label>acc_max</label><input type="number" id="f-acc_max" placeholder="26.04" step="0.001"/></div>
+        <div class="field"><label>gyro_max</label><input type="number" id="f-gyro_max" placeholder="7.31" step="0.001"/></div>
+        <div class="field"><label>lin_max</label><input type="number" id="f-lin_max" placeholder="11.13" step="0.001"/></div>
+        <div class="field"><label>acc_kurtosis</label><input type="number" id="f-acc_kurtosis" placeholder="20.38" step="0.001"/></div>
+        <div class="field"><label>gyro_kurtosis</label><input type="number" id="f-gyro_kurtosis" placeholder="2.78" step="0.001"/></div>
+        <div class="field"><label>acc_skewness</label><input type="number" id="f-acc_skewness" placeholder="3.89" step="0.001"/></div>
+        <div class="field"><label>gyro_skewness</label><input type="number" id="f-gyro_skewness" placeholder="1.59" step="0.001"/></div>
+        <div class="field"><label>post_gyro_max</label><input type="number" id="f-post_gyro_max" placeholder="7.09" step="0.001"/></div>
+        <div class="field"><label>post_lin_max</label><input type="number" id="f-post_lin_max" placeholder="10.79" step="0.001"/></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-acc" id="pred-btn" onclick="manualPredict()"><span id="pred-spin"></span>Predict</button>
+        <button class="btn btn-ghost" onclick="loadSample()">Sample</button>
+        <button class="btn btn-ghost" onclick="clearManual()">Clear</button>
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="card-lbl">Result</div><div class="result-box" id="manual-result"><span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">Enter values and predict</span></div></div>
+      <div class="card" id="manual-probs-card" style="display:none"><div class="card-lbl">Probabilities</div><div class="prob-list" id="manual-probs"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div id="panel-history" class="panel">
+  <div class="card" style="border-color:rgba(255,45,120,.25)">
+    <div class="card-lbl" style="color:var(--acc)">Past Fall Events</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <span id="hist-count" style="font-family:var(--mono);font-size:.72rem;color:var(--muted)">0 events recorded</span>
+      <button class="btn btn-ghost" onclick="clearHistory()" style="padding:5px 14px;font-size:.65rem;margin-left:auto">Clear All</button>
+    </div>
+    <div id="hist-empty" style="text-align:center;padding:48px 20px">
+      <div style="font-size:2.5rem;margin-bottom:12px">&#x1F4CD;</div>
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted)">No fall events recorded yet.<br/>Start live detection to begin tracking.</div>
+    </div>
+    <div id="hist-list" style="flex-direction:column;gap:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- SOS OVERLAY -->
+<div id="sos-overlay">
+  <div class="sos-box">
+    <div class="sos-icon">&#x1F6A8;</div>
+    <div class="sos-title">FALL DETECTED</div>
+    <div id="sos-badge" style="display:inline-block;padding:3px 12px;border-radius:20px;background:rgba(255,61,107,.15);color:var(--red);font-family:var(--mono);font-size:.68rem;margin-bottom:14px">conf: —</div>
+    <div class="sos-ring-wrap">
+      <svg width="90" height="90" style="position:absolute;top:0;left:0;transform:rotate(-90deg)">
+        <circle cx="45" cy="45" r="40" fill="none" stroke="rgba(255,61,107,.15)" stroke-width="7"/>
+        <circle id="sos-ring" cx="45" cy="45" r="40" fill="none" stroke="#ff3d6b" stroke-width="7"
+          stroke-dasharray="251.3" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dashoffset 1s linear"/>
+      </svg>
+      <div class="sos-num" id="sos-num">10</div>
+    </div>
+    <div class="sos-lbl" id="sos-lbl">seconds until SOS is sent</div>
+    <div class="voice-status" id="v-status"></div>
+    <div class="voice-heard" id="v-heard"></div>
+    <div class="gps-status" id="gps-status"></div>
+    <button class="sos-btn-send" onclick="sendSOSNow()">Send SOS Now</button>
+    <button class="sos-btn-cancel" onclick="cancelSOS()">I am OK — Cancel</button>
+  </div>
+</div>
+
+<script>
+const LABEL_MAP={FOL:{name:"Forward Fall",cat:"fall"},FKL:{name:"Fall Kneel",cat:"fall"},SDL:{name:"Sideways Fall",cat:"fall"},BSC:{name:"Back Fall",cat:"fall"},STU:{name:"Stumble",cat:"stumble"},WAL:{name:"Walking",cat:"normal"},JOG:{name:"Jogging",cat:"normal"},STD:{name:"Standing",cat:"normal"},STN:{name:"Standing Still",cat:"normal"},JUM:{name:"Jumping",cat:"normal"},CSI:{name:"Chair Sit-In",cat:"normal"},CSO:{name:"Chair Sit-Out",cat:"normal"},SCH:{name:"Sit Chair",cat:"normal"}};
+const FEATURES=["acc_max","gyro_max","lin_max","acc_kurtosis","gyro_kurtosis","acc_skewness","gyro_skewness","post_gyro_max","post_lin_max"];
+
+function $$(id){return document.getElementById(id);}
+function getBase(){return $$("api-url").value.trim().replace(/\/predict$/,"");}
+function switchTab(n,btn){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$$("panel-"+n).classList.add("active");if(n==="history")renderHistory();}
+
+function renderResult(boxId,probId,json){
+  const meta=LABEL_MAP[json.label]||{name:json.label,cat:"normal"};
+  const cat=meta.cat;
+  const box=$$(boxId);
+  box.className="result-box "+cat;
+  box.innerHTML=`<div class="res-code ${cat}">${json.label}</div><div style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">${meta.name}</div><div style="font-family:var(--mono);font-size:.68rem;color:${cat==="fall"?"var(--red)":cat==="stumble"?"var(--warn)":"var(--ok)"};font-weight:700">${cat.toUpperCase()}</div><div style="font-family:var(--mono);font-size:.72rem">${json.confidence}% confidence</div>`;
+  if(json.top5&&probId){$$(probId).innerHTML=json.top5.map(t=>`<div class="pb-item"><span class="pb-lbl">${t.label}</span><div class="pb-track"><div class="pb-fill" style="width:${t.prob}%"></div></div><span class="pb-val">${t.prob.toFixed(1)}%</span></div>`).join("");}
+}
+
+async function testConn(){
+  const el=$$("conn-msg");el.textContent="Testing…";el.style.color="var(--muted)";
+  try{
+    const r=await fetch(getBase()+"/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({acc_max:26,gyro_max:7,lin_max:11,acc_kurtosis:20,gyro_kurtosis:3,acc_skewness:4,gyro_skewness:1.6,post_gyro_max:7,post_lin_max:11})});
+    const d=await r.json();
+    el.style.color="var(--ok)";el.textContent="Connected — got: "+d.label+" ("+d.confidence+"%)";
+  }catch(e){el.style.color="var(--red)";el.textContent="Failed: "+e.message;}
+}
+
+function loadSample(){const s={acc_max:26.04,gyro_max:7.31,lin_max:11.13,acc_kurtosis:20.38,gyro_kurtosis:2.78,acc_skewness:3.89,gyro_skewness:1.59,post_gyro_max:7.09,post_lin_max:10.79};FEATURES.forEach(f=>{const el=$$("f-"+f);if(el)el.value=s[f];});}
+function clearManual(){FEATURES.forEach(f=>{const el=$$("f-"+f);if(el)el.value="";});$$("manual-result").className="result-box";$$("manual-result").innerHTML='<span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">Enter values and predict</span>';$$("manual-probs-card").style.display="none";}
+async function manualPredict(){
+  $$("manual-alert").innerHTML="";
+  const data={};
+  for(const f of FEATURES){const v=$$("f-"+f).value;if(v===""){$$("manual-alert").innerHTML='<div style="color:var(--red);font-family:var(--mono);font-size:.7rem;margin-bottom:10px">All fields required</div>';return;}data[f]=parseFloat(v);}
+  const btn=$$("pred-btn");btn.disabled=true;$$("pred-spin").innerHTML='<span class="spin"></span> ';
+  try{
+    const r=await fetch(getBase()+"/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    renderResult("manual-result","manual-probs",d);$$("manual-probs-card").style.display="block";
+  }catch(e){$$("manual-alert").innerHTML='<div style="color:var(--red);font-family:var(--mono);font-size:.7rem;margin-bottom:10px">'+e.message+'</div>';}
+  finally{btn.disabled=false;$$("pred-spin").innerHTML="";}
+}
+
+/* ── Fall History ── */
+const HISTORY_KEY="fallguard_history";
+let _histEntryId=null;
+
+function loadHistoryFromStorage(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");}catch(e){return[];}}
+function saveHistoryToStorage(items){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(items.slice(0,100)));}catch(e){}}
+
+function addFallToHistory(label,conf,gps){
+  const now=new Date();
+  const entry={id:now.getTime(),label,name:(LABEL_MAP[label]||{name:label}).name,conf,
+    time:now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"}),
+    date:now.toLocaleDateString([],{day:"2-digit",month:"short",year:"numeric"}),
+    gps:gps||null,sosSent:false};
+  const items=loadHistoryFromStorage();items.unshift(entry);saveHistoryToStorage(items);
+  renderHistory();return entry;
+}
+
+function markSosSent(id){
+  const items=loadHistoryFromStorage();const item=items.find(e=>e.id===id);
+  if(item){item.sosSent=true;saveHistoryToStorage(items);renderHistory();}
+}
+
+function renderHistory(){
+  const items=loadHistoryFromStorage();
+  $$("hist-count").textContent=items.length+(items.length===1?" event":" events")+" recorded";
+  if(!items.length){$$("hist-empty").style.display="block";$$("hist-list").style.display="none";return;}
+  $$("hist-empty").style.display="none";$$("hist-list").style.display="flex";
+  $$("hist-list").innerHTML=items.map(e=>{
+    const mapsLink=e.gps
+      ?`<a href="https://maps.google.com/?q=${e.gps.lat},${e.gps.lon}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.3);border-radius:3px;color:var(--acc3);font-family:var(--mono);font-size:.62rem;text-decoration:none;margin-top:6px">&#x1F4CD; ${e.gps.lat.toFixed(5)}, ${e.gps.lon.toFixed(5)} &nbsp;→ Maps</a>`
+      :`<span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:6px;display:inline-block">&#x1F4CD; Location not recorded</span>`;
+    const sosBadge=e.sosSent
+      ?`<span style="padding:2px 9px;background:rgba(255,45,120,.15);border:1px solid rgba(255,45,120,.4);border-radius:3px;color:var(--red);font-family:var(--mono);font-size:.6rem;font-weight:700">SOS SENT</span>`
+      :`<span style="padding:2px 9px;background:rgba(74,26,128,.3);border:1px solid var(--bdr);border-radius:3px;color:var(--muted);font-family:var(--mono);font-size:.6rem">no SOS</span>`;
+    return `<div style="background:linear-gradient(160deg,rgba(22,0,48,.95),rgba(13,0,32,.98));border:1px solid rgba(74,26,128,.5);border-radius:8px;padding:14px 16px;position:relative;overflow:hidden;margin-bottom:10px">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent)"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div>
-          <div
-            style="
-              font-family: var(--mono);
-              font-size: 11px;
-              color: var(--muted);
-              margin-bottom: 4px;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-            "
-          >
-            Peak acceleration
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-family:var(--display);font-size:1.1rem;font-weight:900;color:var(--red)">${e.label}</span>
+            <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">${e.name}</span>
+            ${sosBadge}
           </div>
-          <div class="fall-modal-sma" id="modalSma">—</div>
+          <div style="font-family:var(--mono);font-size:.65rem;color:var(--muted)">${e.date} &nbsp;·&nbsp; ${e.time}</div>
+          ${mapsLink}
         </div>
-        <div class="countdown">
-          Auto-dismiss in
-          <span class="countdown-num" id="countdownNum">5</span>s
-        </div>
-        <button class="btn-dismiss" onclick="dismissAlert()">I'M OKAY</button>
-      </div>
-    </div>
-
-    <div class="container">
-      <!-- HEADER -->
-      <div class="header">
-        <div class="logo">FallGuard <span>/ v1.0</span></div>
-        <div class="status-pill">
-          <div class="status-dot" id="statusDot"></div>
-          <span id="statusText">idle</span>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--display);font-size:1.6rem;font-weight:900;color:var(--red)">${e.conf}%</div>
+          <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted)">confidence</div>
         </div>
       </div>
+    </div>`;
+  }).join("");
+}
 
-      <!-- NO SUPPORT MESSAGE -->
-      <div class="no-support" id="noSupport">
-        <div style="font-size: 40px">📵</div>
-        <h2>Not supported</h2>
-        <p>
-          Device Motion API requires a real mobile device over HTTPS. Open this
-          page on your phone.
-        </p>
-      </div>
+function clearHistory(){if(!confirm("Clear all fall history?"))return;localStorage.removeItem(HISTORY_KEY);renderHistory();}
+renderHistory();
 
-      <!-- MAIN STATUS CARD -->
-      <div class="main-card" id="mainCard">
-        <div class="shield-icon" id="shieldIcon">🛡️</div>
-        <div class="main-status idle" id="mainStatus">STANDBY</div>
-        <div class="main-sub" id="mainSub">
-          Tap Start to begin monitoring for falls using your device's
-          accelerometer.
-        </div>
-        <button class="btn-start" id="btnStart" onclick="toggleMonitoring()">
-          Start Monitoring
-        </button>
-      </div>
+/* LIVE SENSOR */
+const WIN=50,PRED_EVERY=25;
+let running=false,motionH=null;
+let accBuf={x:[],y:[],z:[]},gyroBuf={x:[],y:[],z:[]},waveBuf={x:[],y:[],z:[]};
+let sampleCount=0,predTimer=0,logItems=[];
+let consecutiveFalls=0;
+const SOS_FALL_CONFIRM=2;
 
-      <!-- AXES -->
-      <div class="axes-grid" id="axesGrid" style="display: none">
-        <div class="axis-card">
-          <div class="axis-label x">X axis</div>
-          <div class="axis-value" id="axX">0.0</div>
-          <div class="axis-bar-track">
-            <div class="axis-bar x" id="barX"></div>
-          </div>
-        </div>
-        <div class="axis-card">
-          <div class="axis-label y">Y axis</div>
-          <div class="axis-value" id="axY">0.0</div>
-          <div class="axis-bar-track">
-            <div class="axis-bar y" id="barY"></div>
-          </div>
-        </div>
-        <div class="axis-card">
-          <div class="axis-label z">Z axis</div>
-          <div class="axis-value" id="axZ">0.0</div>
-          <div class="axis-bar-track">
-            <div class="axis-bar z" id="barZ"></div>
-          </div>
-        </div>
-      </div>
+function getSosName(){const el=$$("sos-name");return el?el.value.trim()||"Emergency Contact":"Emergency Contact";}
+function getSosThreshold(){const el=$$("sos-threshold");return el?parseInt(el.value)||80:80;}
+function getSosCountdown(){const el=$$("sos-countdown");return el?parseInt(el.value)||10:10;}
 
-      <!-- SMA -->
-      <div class="sma-card" id="smaCard" style="display: none">
-        <div class="sma-left">
-          <div class="sma-title">Signal Magnitude</div>
-          <div class="sma-value" id="smaValue">0.0</div>
-          <div class="sma-unit">m/s²</div>
-        </div>
-        <div class="threshold-info">
-          <div class="threshold-label">Fall threshold</div>
-          <div class="threshold-val" id="threshDisplay">25 m/s²</div>
-        </div>
-      </div>
+function mag(x,y,z){return Math.sqrt(x*x+y*y+z*z);}
+function mean(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:0;}
+function vari(a){const m=mean(a);return a.length?a.reduce((s,v)=>s+(v-m)**2,0)/a.length:0;}
+function kurt(a){const m=mean(a),v=vari(a);if(!v||a.length<4)return 0;return a.reduce((s,x)=>s+(x-m)**4,0)/(a.length*v**2)-3;}
+function skew(a){const m=mean(a),v=vari(a);if(!v||a.length<3)return 0;return a.reduce((s,x)=>s+(x-m)**3,0)/(a.length*Math.pow(v,1.5));}
 
-      <!-- WAVEFORM -->
-      <div class="wave-card" id="waveCard" style="display: none">
-        <div class="wave-header">
-          <div class="wave-title">Acceleration waveform</div>
-          <div class="wave-legend">
-            <div class="wave-legend-item">
-              <div
-                class="wave-legend-dot"
-                style="background: var(--danger)"
-              ></div>
-              X
-            </div>
-            <div class="wave-legend-item">
-              <div
-                class="wave-legend-dot"
-                style="background: var(--accent)"
-              ></div>
-              Y
-            </div>
-            <div class="wave-legend-item">
-              <div
-                class="wave-legend-dot"
-                style="background: var(--blue)"
-              ></div>
-              Z
-            </div>
-            <div class="wave-legend-item">
-              <div
-                class="wave-legend-dot"
-                style="background: var(--warn)"
-              ></div>
-              SMA
-            </div>
-          </div>
-        </div>
-        <canvas id="waveform"></canvas>
-      </div>
+function computeFeatures(){
+  const ax=accBuf.x,ay=accBuf.y,az=accBuf.z,gx=gyroBuf.x,gy=gyroBuf.y,gz=gyroBuf.z;
+  const aM=ax.map((v,i)=>mag(v,ay[i],az[i]));
+  const gM=gx.map((v,i)=>mag(v,gy[i],gz[i]));
+  const lM=aM.map(v=>Math.abs(v-9.81));
+  const h=Math.floor(aM.length/2);
+  return{acc_max:Math.max(...aM),gyro_max:Math.max(...gM),lin_max:Math.max(...lM),acc_kurtosis:kurt(aM),gyro_kurtosis:kurt(gM),acc_skewness:skew(aM),gyro_skewness:skew(gM),post_gyro_max:Math.max(...gM.slice(h)),post_lin_max:Math.max(...lM.slice(h))};
+}
 
-      <!-- EVENT LOG -->
-      <div class="log-card" id="logCard" style="display: none">
-        <div class="log-header">
-          <span>Event log</span>
-          <span class="log-count" id="logCount">0</span>
-        </div>
-        <div class="log-body" id="logBody">
-          <div class="log-empty" id="logEmpty">No fall events detected</div>
-        </div>
-      </div>
+function updateBars(f){
+  const cl=(v,mx)=>Math.max(0,Math.min(100,v/mx*100));
+  $$("lb-acc").style.width=cl(f.acc_max,45)+"%";$$("lv-acc").textContent=f.acc_max.toFixed(2);
+  $$("lb-gyro").style.width=cl(f.gyro_max,20)+"%";$$("lv-gyro").textContent=f.gyro_max.toFixed(2);
+  $$("lb-lin").style.width=cl(f.lin_max,25)+"%";$$("lv-lin").textContent=f.lin_max.toFixed(2);
+  $$("lb-kurt").style.width=cl(Math.abs(f.acc_kurtosis),60)+"%";$$("lv-kurt").textContent=f.acc_kurtosis.toFixed(2);
+}
 
-      <!-- SETTINGS -->
-      <div class="settings-card" id="settingsCard" style="display: none">
-        <div class="settings-title">Detection settings</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Fall threshold</div>
-            <div class="setting-sub">Acceleration spike sensitivity</div>
-          </div>
-          <div class="setting-ctrl">
-            <input
-              type="range"
-              id="threshSlider"
-              min="15"
-              max="50"
-              value="25"
-              oninput="updateThreshold(this.value)"
-            />
-            <span class="setting-val" id="threshVal">25 m/s²</span>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Confirmation window</div>
-            <div class="setting-sub">Post-fall stillness check</div>
-          </div>
-          <div class="setting-ctrl">
-            <input
-              type="range"
-              id="windowSlider"
-              min="500"
-              max="3000"
-              step="250"
-              value="1500"
-              oninput="updateWindow(this.value)"
-            />
-            <span class="setting-val" id="windowVal">1.5s</span>
-          </div>
-        </div>
-      </div>
-    </div>
+function drawWave(){
+  const canvas=$$("liveWave");if(!canvas)return;
+  const W=canvas.offsetWidth||400,H=80,dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+"px";
+  const ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);
+  ctx.fillStyle="#090c10";ctx.fillRect(0,0,W,H);
+  [{k:"x",c:"#378ADD"},{k:"y",c:"#1D9E75"},{k:"z",c:"#EF9F27"}].forEach(({k,c})=>{
+    const arr=waveBuf[k];if(arr.length<2)return;
+    ctx.beginPath();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.lineJoin="round";
+    arr.forEach((v,i)=>{const x=i/(arr.length-1)*W,y=H/2-(v/25)*(H/2);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+  });
+}
 
-    <script>
-      // ── STATE ──
-      let monitoring = false;
-      let fallThreshold = 25;
-      let confirmWindow = 1500;
-      let postFallTimer = null;
-      let alertTimer = null;
-      let fallCount = 0;
-      let lastSMA = 0;
-      let peakSMA = 0;
+function addLog(label,name,cat){
+  const now=new Date();
+  const t=[now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>n.toString().padStart(2,"0")).join(":");
+  logItems.unshift({t,label,name,cat});if(logItems.length>25)logItems.pop();
+  $$("live-log").innerHTML=logItems.map(e=>`<div class="log-row"><span class="log-t">${e.t}</span><span style="color:${e.cat==="fall"?"var(--red)":e.cat==="stumble"?"var(--warn)":"var(--ok)"};font-weight:700">${e.label}</span> ${e.name}</div>`).join("");
+}
 
-      // Waveform history (last N samples)
-      const WAVE_LEN = 120;
-      const waveX = new Array(WAVE_LEN).fill(0);
-      const waveY = new Array(WAVE_LEN).fill(0);
-      const waveZ = new Array(WAVE_LEN).fill(0);
-      const waveSMA = new Array(WAVE_LEN).fill(0);
+async function livePredictNow(){
+  if(!running)return;
+  const f=computeFeatures();updateBars(f);
+  try{
+    const r=await fetch(getBase()+"/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(f)});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    renderResult("live-result","live-probs",d);
+    const meta=LABEL_MAP[d.label]||{name:d.label,cat:"normal"};
+    const cat=meta.cat;
+    if(cat==="fall"){
+      $$("live-status").textContent="Status: FALL DETECTED!";$$("live-status").style.color="var(--red)";
+      consecutiveFalls++;
+      const confOk=d.confidence>=getSosThreshold();
+      if(confOk&&!sosTimer){triggerSOS(d.label,d.confidence);}
+    }else{
+      consecutiveFalls=0;
+      if(cat==="stumble"){$$("live-status").textContent="Status: Stumble";$$("live-status").style.color="var(--warn)";}
+      else{$$("live-status").textContent="Status: Normal";$$("live-status").style.color="var(--ok)";}
+    }
+    addLog(d.label,meta.name,cat);
+  }catch(e){$$("live-result").innerHTML='<span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">Error: '+e.message+'</span>';}
+}
 
-      // Canvas
-      const canvas = document.getElementById("waveform");
-      const ctx = canvas.getContext("2d");
+async function startSensors(){
+  if(typeof DeviceMotionEvent==="undefined"){alert("DeviceMotionEvent not supported. Open on a mobile browser.");return;}
+  if(typeof DeviceMotionEvent.requestPermission==="function"){
+    try{const p=await DeviceMotionEvent.requestPermission();if(p!=="granted"){alert("Permission denied.");return;}}
+    catch(e){alert("Permission error: "+e.message);return;}
+  }
+  running=true;sampleCount=0;predTimer=0;consecutiveFalls=0;
+  accBuf={x:[],y:[],z:[]};gyroBuf={x:[],y:[],z:[]};waveBuf={x:[],y:[],z:[]};
+  $$("ctrl-off").style.display="none";$$("ctrl-on").style.display="block";
+  $$("live-status").textContent="Status: Listening…";$$("live-status").style.color="var(--acc)";
+  motionH=function(e){
+    if(!running)return;
+    const a=e.accelerationIncludingGravity||e.acceleration||{};
+    const rr=e.rotationRate||{};
+    const ax=a.x||0,ay=a.y||0,az=a.z||0,gx=rr.alpha||0,gy=rr.beta||0,gz=rr.gamma||0;
+    accBuf.x.push(ax);accBuf.y.push(ay);accBuf.z.push(az);
+    gyroBuf.x.push(gx);gyroBuf.y.push(gy);gyroBuf.z.push(gz);
+    waveBuf.x.push(ax);waveBuf.y.push(ay);waveBuf.z.push(az);
+    if(accBuf.x.length>WIN){accBuf.x.shift();accBuf.y.shift();accBuf.z.shift();}
+    if(gyroBuf.x.length>WIN){gyroBuf.x.shift();gyroBuf.y.shift();gyroBuf.z.shift();}
+    if(waveBuf.x.length>150){waveBuf.x.shift();waveBuf.y.shift();waveBuf.z.shift();}
+    $$("sg-ax").textContent=ax.toFixed(2);$$("sg-ay").textContent=ay.toFixed(2);$$("sg-az").textContent=az.toFixed(2);
+    $$("sg-gx").textContent=gx.toFixed(2);$$("sg-gy").textContent=gy.toFixed(2);$$("sg-gz").textContent=gz.toFixed(2);
+    sampleCount++;predTimer++;
+    $$("sample-ct").textContent=sampleCount+" samples";
+    const filled=accBuf.x.length>=WIN;
+    $$("win-badge").textContent=filled?"Window ready":accBuf.x.length+"/"+WIN+" filling…";
+    $$("win-badge").style.color=filled?"var(--ok)":"var(--muted)";
+    drawWave();
+    if(filled&&predTimer>=PRED_EVERY){predTimer=0;livePredictNow();}
+  };
+  window.addEventListener("devicemotion",motionH);
+}
 
-      function resizeCanvas() {
-        canvas.width = canvas.offsetWidth * devicePixelRatio;
-        canvas.height = canvas.offsetHeight * devicePixelRatio;
+function stopSensors(){
+  running=false;if(motionH)window.removeEventListener("devicemotion",motionH);
+  $$("ctrl-off").style.display="block";$$("ctrl-on").style.display="none";
+  $$("live-status").textContent="Status: Stopped";$$("live-status").style.color="var(--muted)";
+}
+
+/* SOS + VOICE */
+let sosTimer=null,sosSecondsLeft=0,sosTotal=10;
+let sosListening=false;
+let sosAudioCtx=null,sosBeepInterval=null;
+let sosLabel="",sosConf=0,sosGps=null;
+let recognition=null;
+
+function startBeep(){
+  try{
+    sosAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    sosBeepInterval=setInterval(()=>{
+      const o=sosAudioCtx.createOscillator(),g=sosAudioCtx.createGain();
+      o.connect(g);g.connect(sosAudioCtx.destination);
+      o.frequency.value=880;o.type="square";
+      g.gain.setValueAtTime(0.3,sosAudioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,sosAudioCtx.currentTime+0.25);
+      o.start();o.stop(sosAudioCtx.currentTime+0.25);
+    },700);
+  }catch(e){}
+}
+function stopBeep(){if(sosBeepInterval)clearInterval(sosBeepInterval);if(sosAudioCtx)try{sosAudioCtx.close();}catch(e){}sosAudioCtx=null;sosBeepInterval=null;}
+
+function updateRing(left,total){
+  const ring=$$("sos-ring");if(!ring)return;
+  const c=251.3;ring.style.strokeDashoffset=c*(1-(left/total));
+}
+
+function speak(text,onEnd){
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="en-IN";u.rate=0.88;u.pitch=1;u.volume=1;
+    if(onEnd)u.onend=onEnd;
+    window.speechSynthesis.speak(u);
+  }catch(e){if(onEnd)setTimeout(onEnd,100);}
+}
+
+function startListening(onResult){
+  try{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){onResult("");return;}
+    if(recognition)try{recognition.stop();}catch(e){}
+    recognition=new SR();
+    recognition.lang="en-IN";recognition.interimResults=false;recognition.maxAlternatives=3;
+    $$("v-status").textContent='Listening… say "I am OK" or "Help"';
+    recognition.onresult=function(e){
+      const heard=Array.from(e.results[0]).map(r=>r.transcript).join(" ").toLowerCase();
+      $$("v-heard").textContent='"'+heard+'"';$$("v-status").textContent="Heard you";
+      recognition=null;onResult(heard);
+    };
+    recognition.onerror=function(){$$("v-status").textContent="Could not hear — use buttons";recognition=null;onResult("");};
+    recognition.onend=function(){
+      if(sosListening&&$$("sos-overlay").style.display==="flex"){
+        setTimeout(function(){if(sosListening&&$$("sos-overlay").style.display==="flex"){startListening(processVoice);}},600);
       }
-      window.addEventListener("resize", resizeCanvas);
+    };
+    recognition.start();
+  }catch(e){$$("v-status").textContent="Mic not available — use buttons";onResult("");}
+}
+function stopListening(){if(recognition)try{recognition.stop();}catch(e){}recognition=null;}
 
-      // ── PERMISSION + TOGGLE ──
-      async function toggleMonitoring() {
-        if (monitoring) {
-          stopMonitoring();
-          return;
-        }
+function getGPS(){
+  return new Promise(resolve=>{
+    if(!navigator.geolocation){resolve(null);return;}
+    $$("gps-status").textContent="Getting GPS…";
+    navigator.geolocation.getCurrentPosition(
+      pos=>{sosGps={lat:pos.coords.latitude,lon:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};$$("gps-status").textContent="GPS: "+sosGps.lat.toFixed(5)+", "+sosGps.lon.toFixed(5);resolve(sosGps);},
+      ()=>{$$("gps-status").textContent="GPS unavailable";resolve(null);},
+      {timeout:6000,enableHighAccuracy:true}
+    );
+  });
+}
 
-        // iOS 13+ permission
-        if (
-          typeof DeviceMotionEvent !== "undefined" &&
-          typeof DeviceMotionEvent.requestPermission === "function"
-        ) {
-          try {
-            const perm = await DeviceMotionEvent.requestPermission();
-            if (perm !== "granted") {
-              showNoSupport("Permission denied. Please allow motion access.");
-              return;
-            }
-          } catch (e) {
-            showNoSupport("Could not request permission: " + e.message);
-            return;
-          }
-        } else if (typeof DeviceMotionEvent === "undefined") {
-          showNoSupport();
-          return;
-        }
+function processVoice(heard){
+  if(!heard){$$("v-status").textContent="No response — timer continues";return;}
+  const ok=["ok","okay","fine","i am ok","im ok","no","cancel","safe","haan","theek","normal"];
+  const sos=["help","yes","send","emergency","hurt","pain","fallen","madad","call","nahi"];
+  if(ok.some(w=>heard.includes(w))){speak("Okay, stay safe!");setTimeout(cancelSOS,1200);}
+  else if(sos.some(w=>heard.includes(w))){speak("Sending help now!");sendSOSNow();}
+  else{$$("v-status").textContent='Not clear — say "OK" or tap button';speak("Say I am okay to cancel.");}
+}
 
-        startMonitoring();
-      }
+async function triggerSOS(label,conf){
+  if(sosTimer)return;
+  sosLabel=label;sosConf=conf;sosGps=null;
+  // Save to history immediately
+  const _entry=addFallToHistory(label,conf,null);
+  _histEntryId=_entry.id;
+  $$("sos-badge").textContent="conf: "+conf+"% — "+label;
+  $$("sos-lbl").textContent="seconds until SOS is sent";
+  $$("v-status").textContent="";$$("v-heard").textContent="";$$("gps-status").textContent="";
+  sosTotal=getSosCountdown();sosSecondsLeft=sosTotal;
+  $$("sos-num").textContent=sosSecondsLeft;
+  updateRing(sosSecondsLeft,sosTotal);
+  $$("sos-overlay").style.display="flex";
+  startBeep();
+  if(navigator.vibrate)navigator.vibrate([400,150,400,150,400,150,800]);
+  getGPS();
+  speak("Fall detected! Are you okay? Say I am okay to cancel, or I will send help in "+sosTotal+" seconds.",function(){
+    if($$("sos-overlay").style.display==="none")return;
+    sosListening=true;
+    setTimeout(function(){startListening(processVoice);},400);
+  });
+  sosTimer=setInterval(function(){
+    sosSecondsLeft--;
+    $$("sos-num").textContent=sosSecondsLeft;
+    updateRing(sosSecondsLeft,sosTotal);
+    if(navigator.vibrate)navigator.vibrate(120);
+    if(sosSecondsLeft<=0){clearInterval(sosTimer);sosTimer=null;stopListening();sendSOSNow();}
+  },1000);
+}
 
-      function startMonitoring() {
-        monitoring = true;
-        window.addEventListener("devicemotion", onMotion);
+async function sendSOSNow(){
+  if(sosTimer){clearInterval(sosTimer);sosTimer=null;}
+  sosListening=false;
+  stopBeep();stopListening();
+  $$("sos-num").textContent="SOS";$$("sos-lbl").textContent="Sending SMS…";
+  speak("Sending emergency alert. Help is on the way!");
+  let gpsLink=null,gpsText="Location unavailable";
+  if(!sosGps){await getGPS();}
+  if(sosGps){
+    gpsLink="https://maps.google.com/?q="+sosGps.lat+","+sosGps.lon;
+    gpsText="Lat: "+sosGps.lat.toFixed(6)+", Lon: "+sosGps.lon.toFixed(6);
+    // Update history entry with GPS
+    if(_histEntryId){const items=loadHistoryFromStorage();const it=items.find(e=>e.id===_histEntryId);if(it){it.gps=sosGps;saveHistoryToStorage(items);renderHistory();}}
+  }
+  try{
+    const r=await fetch(getBase()+"/sos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({label:sosLabel,confidence:sosConf,gps_text:gpsText,gps_link:gpsLink})});
+    const d=await r.json();
+    if(d.sent){$$("sos-lbl").textContent="SMS sent to "+getSosName()+"!";speak("Message sent!");if(_histEntryId)markSosSent(_histEntryId);}
+    else if(d.reason==="cooldown"){$$("sos-lbl").textContent="SMS already sent recently";}
+    else{$$("sos-lbl").textContent="SMS failed: "+(d.reason||"check Twilio");}
+  }catch(e){$$("sos-lbl").textContent="Backend offline — call manually";}
+}
 
-        // UI
-        setStatus("monitoring");
-        document.getElementById("btnStart").textContent = "Stop";
-        document.getElementById("btnStart").classList.add("stop");
-        document.getElementById("mainStatus").textContent = "MONITORING";
-        document.getElementById("mainStatus").className = "main-status";
-        document.getElementById("mainSub").textContent =
-          "Listening for sudden acceleration changes…";
-        document.getElementById("mainCard").className = "main-card monitoring";
-
-        // Show panels
-        ["axesGrid", "smaCard", "waveCard", "logCard", "settingsCard"].forEach(
-          (id) => {
-            document.getElementById(id).style.display = "";
-          },
-        );
-
-        resizeCanvas();
-        requestAnimationFrame(drawWave);
-      }
-
-      function stopMonitoring() {
-        monitoring = false;
-        window.removeEventListener("devicemotion", onMotion);
-        clearTimeout(postFallTimer);
-
-        setStatus("idle");
-        document.getElementById("btnStart").textContent = "Start Monitoring";
-        document.getElementById("btnStart").classList.remove("stop");
-        document.getElementById("mainStatus").textContent = "STANDBY";
-        document.getElementById("mainStatus").className = "main-status idle";
-        document.getElementById("mainSub").textContent =
-          "Tap Start to begin monitoring for falls using your device's accelerometer.";
-        document.getElementById("mainCard").className = "main-card";
-        document.getElementById("shieldIcon").className = "shield-icon";
-      }
-
-      // ── MOTION HANDLER ──//
-      function onMotion(e) {
-        const ag = e.accelerationIncludingGravity;
-        if (!ag) return;
-
-        const x = ag.x || 0;
-        const y = ag.y || 0;
-        const z = ag.z || 0;
-        const sma = Math.sqrt(x * x + y * y + z * z);
-
-        lastSMA = sma;
-
-        // Update waveform buffers
-        waveX.shift();
-        waveX.push(x);
-        waveY.shift();
-        waveY.push(y);
-        waveZ.shift();
-        waveZ.push(z);
-        waveSMA.shift();
-        waveSMA.push(sma);
-
-        // Update axis UI
-        const clamp = (v) => Math.min(100, (Math.abs(v) / 20) * 100);
-        document.getElementById("axX").textContent = x.toFixed(1);
-        document.getElementById("axY").textContent = y.toFixed(1);
-        document.getElementById("axZ").textContent = z.toFixed(1);
-        document.getElementById("barX").style.width = clamp(x) + "%";
-        document.getElementById("barY").style.width = clamp(y) + "%";
-        document.getElementById("barZ").style.width = clamp(z) + "%";
-
-        // SMA display
-        const smaEl = document.getElementById("smaValue");
-        smaEl.textContent = sma.toFixed(1);
-        smaEl.className =
-          "sma-value" +
-          (sma > fallThreshold
-            ? " danger"
-            : sma > fallThreshold * 0.7
-              ? " high"
-              : "");
-
-        // Fall detection
-        if (sma > fallThreshold && !postFallTimer) {
-          peakSMA = sma;
-          postFallTimer = setTimeout(() => {
-            // Confirm: still after spike
-            if (lastSMA < 12) {
-              triggerFall(peakSMA);
-            }
-            postFallTimer = null;
-          }, confirmWindow);
-        }
-        if (sma > peakSMA) peakSMA = sma;
-      }
-
-      // ── FALL TRIGGER ──
-      function triggerFall(peak) {
-        fallCount++;
-
-        // Update main card
-        document.getElementById("mainCard").className = "main-card fall";
-        document.getElementById("shieldIcon").className = "shield-icon fall";
-        document.getElementById("shieldIcon").textContent = "⚠️";
-        document.getElementById("mainStatus").textContent = "FALL DETECTED";
-        document.getElementById("mainStatus").className = "main-status fall";
-        document.getElementById("mainSub").textContent =
-          "Sudden impact registered. Check on the user.";
-        setStatus("alert");
-
-        // Log entry
-        addLogEntry(peak);
-
-        // Show overlay
-        document.getElementById("modalSma").textContent =
-          peak.toFixed(1) + " m/s²";
-        document.getElementById("fallOverlay").classList.add("show");
-        startCountdown(5);
-
-        // Vibrate if supported
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-      }
-
-      function addLogEntry(peak) {
-        const logEmpty = document.getElementById("logEmpty");
-        if (logEmpty) logEmpty.remove();
-
-        const logBody = document.getElementById("logBody");
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
-
-        const entry = document.createElement("div");
-        entry.className = "log-entry";
-        entry.innerHTML = `
-    <div class="log-icon">🚨</div>
-    <div class="log-info">
-      <div class="log-msg">Fall detected</div>
-      <div class="log-detail">Peak: ${peak.toFixed(1)} m/s² · Event #${fallCount}</div>
-    </div>
-    <div class="log-time">${timeStr}</div>
-  `;
-        logBody.prepend(entry);
-
-        const cnt = document.getElementById("logCount");
-        cnt.textContent = fallCount;
-        cnt.classList.add("visible");
-      }
-
-      function startCountdown(n) {
-        document.getElementById("countdownNum").textContent = n;
-        if (n <= 0) {
-          dismissAlert();
-          return;
-        }
-        alertTimer = setTimeout(() => startCountdown(n - 1), 1000);
-      }
-
-      function dismissAlert() {
-        clearTimeout(alertTimer);
-        document.getElementById("fallOverlay").classList.remove("show");
-        if (monitoring) {
-          document.getElementById("mainCard").className =
-            "main-card monitoring";
-          document.getElementById("shieldIcon").className = "shield-icon";
-          document.getElementById("shieldIcon").textContent = "🛡️";
-          document.getElementById("mainStatus").textContent = "MONITORING";
-          document.getElementById("mainStatus").className = "main-status";
-          document.getElementById("mainSub").textContent =
-            "Listening for sudden acceleration changes…";
-          setStatus("monitoring");
-        }
-      }
-
-      // ── WAVEFORM DRAW ──
-      function drawWave() {
-        if (!monitoring) return;
-        requestAnimationFrame(drawWave);
-
-        const w = canvas.width,
-          h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        const MAX_G = 30;
-
-        function drawLine(data, color, alpha) {
-          ctx.beginPath();
-          ctx.strokeStyle = color;
-          ctx.globalAlpha = alpha;
-          ctx.lineWidth = devicePixelRatio * 1.5;
-          ctx.lineJoin = "round";
-          data.forEach((v, i) => {
-            const px = (i / (WAVE_LEN - 1)) * w;
-            const py = h / 2 - (v / MAX_G) * (h / 2 - 4);
-            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-          });
-          ctx.stroke();
-        }
-
-        // Threshold line
-        ctx.beginPath();
-        ctx.strokeStyle = "#ff4d6d";
-        ctx.globalAlpha = 0.25;
-        ctx.lineWidth = devicePixelRatio;
-        ctx.setLineDash([6, 4]);
-        const ty = h / 2 - (fallThreshold / MAX_G) * (h / 2 - 4);
-        ctx.moveTo(0, ty);
-        ctx.lineTo(w, ty);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        drawLine(waveX, "#ff4d6d", 0.6);
-        drawLine(waveY, "#00e5a0", 0.6);
-        drawLine(waveZ, "#60a5fa", 0.6);
-        drawLine(waveSMA, "#fbbf24", 0.9);
-
-        ctx.globalAlpha = 1;
-      }
-
-      // ── SETTINGS ──
-      function updateThreshold(v) {
-        fallThreshold = +v;
-        document.getElementById("threshVal").textContent = v + " m/s²";
-        document.getElementById("threshDisplay").textContent = v + " m/s²";
-      }
-      function updateWindow(v) {
-        confirmWindow = +v;
-        document.getElementById("windowVal").textContent =
-          (v / 1000).toFixed(2).replace(/\.?0+$/, "") + "s";
-      }
-
-      // ── STATUS ──
-      function setStatus(state) {
-        const dot = document.getElementById("statusDot");
-        const txt = document.getElementById("statusText");
-        dot.className =
-          "status-dot" +
-          (state !== "idle"
-            ? " " + (state === "alert" ? "alert" : "active")
-            : "");
-        txt.textContent = state;
-      }
-
-      // ── NO SUPPORT ──
-      function showNoSupport(msg) {
-        const el = document.getElementById("noSupport");
-        el.classList.add("show");
-        if (msg) el.querySelector("p").textContent = msg;
-      }
-
-      // Check on load (desktop/no sensor context)
-      if (typeof DeviceMotionEvent === "undefined") {
-        document.getElementById("noSupport").classList.add("show");
-        document.getElementById("btnStart").disabled = true;
-        document.getElementById("btnStart").style.opacity = "0.4";
-        document.getElementById("btnStart").style.cursor = "not-allowed";
-      }
-    </script>
-  </body>
+function cancelSOS(){
+  if(sosTimer){clearInterval(sosTimer);sosTimer=null;}
+  stopBeep();stopListening();window.speechSynthesis.cancel();
+  sosListening=false;consecutiveFalls=0;
+  $$("sos-overlay").style.display="none";
+}
+</script>
+</body>
 </html>

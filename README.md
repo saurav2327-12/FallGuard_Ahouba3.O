@@ -1,338 +1,230 @@
-# 🛡️ FallGuard — Motion Intelligence System
+# FallGuard — AI-Powered Fall Detection for Android
 
-> AI-powered fall detection for visually impaired and elderly individuals. Uses your phone's built-in sensors — no wearable required.
+> *"Because falling down is an accident. Not getting help shouldn't be."*
+
+FallGuard is a fully offline Android app that detects falls in real time using your phone's built-in sensors and a machine learning model running entirely on-device. No internet. No server. No cloud. Just your phone, your SIM card, and an emergency contact who gets an SMS the moment something goes wrong.
+
+Built for elderly people, people with medical conditions, and anyone who lives or works alone — FallGuard runs silently in the background while you go about your day. The moment it detects a fall, it vibrates, speaks an alert, and gives you 20 seconds to cancel before automatically sending an SOS SMS with your GPS location.
 
 ---
 
-## What It Does
+## What makes this different
 
-FallGuard continuously monitors motion using your phone's accelerometer and gyroscope. When a fall is detected, it:
+Most fall detection apps send your sensor data to a cloud server for processing. That means they need internet, have latency, cost money to run, and raise privacy concerns.
 
-1. Triggers a **10-second countdown overlay** with an alarm
-2. Speaks aloud: *"Are you okay?"* and listens for your voice response
-3. If no response — sends an **SMS with your GPS location** to your emergency contact via Twilio
-4. Logs the event to **Fall History** with a Google Maps link
+FallGuard does everything on the phone itself:
+
+- The ML model runs using **ONNX Runtime Android** — no server call needed
+- SMS is sent via **Android's native SmsManager** — no Twilio, no API key
+- GPS coordinates come from **satellite GPS** — no WiFi or internet
+- Voice cancel uses **on-device speech recognition** — works in airplane mode
+
+---
+
+## How it works
+
+```
+Phone sensors (50 Hz)
+        ↓
+9 statistical features extracted
+(max, kurtosis, skewness, post-impact)
+        ↓
+RandomForest model — ONNX Runtime Android
+        ↓
+Fall detected? (confidence > sensitivity threshold)
+        ↓
+Strong haptic burst + TTS alert + 20s countdown
+        ↓
+User cancels?  →  NO  →  SMS sent with GPS location
+     ↓
+   Safe ✓
+```
 
 ---
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| 📱 **Live Sensor** | Real-time fall detection via phone accelerometer + gyroscope |
-| 🧠 **ML Classification** | Random Forest model — 13 activity types, 1,428 training samples |
-| 🔔 **SOS Countdown** | 10s animated overlay with alarm beep and vibration |
-| 🎤 **Voice Cancel** | Say *"I am OK"* / *"Haan"* / *"Theek"* to cancel — say *"Help"* to send immediately |
-| 📍 **GPS Location** | Google Maps link automatically included in the SMS |
-| 📨 **Twilio SMS** | Instant SMS to pre-configured emergency contact |
-| 🕐 **Fall History** | Persistent log of all fall events with date, time, confidence, location |
-| 🎛️ **Manual Input** | Test predictions by entering sensor values manually |
-| ⚡ **Free Hosting** | Backend runs on Google Colab + Cloudflare Tunnel — no server cost |
-
----
-
-## Repository Structure
-
-```
-fallguard/
-├── index.html              ← Full frontend (Live Sensor, Manual Input, Fall History)
-├── app.py                  ← Flask backend (REST API)
-├── FallGuard_Backend.ipynb ← Google Colab notebook (4 cells, ready to run)
-├── requirements.txt        ← Python dependencies
-├── model.pkl               ← Trained RandomForest model   (add yourself)
-├── label_encoder.pkl       ← LabelEncoder                 (add yourself)
-└── README.md
-```
-
-> `model.pkl` and `label_encoder.pkl` are not committed to git. Add them to `.gitignore` and upload via the Colab notebook.
-
----
-
-## Quick Start — Google Colab (Recommended, Free)
-
-### Step 1 — Open the notebook
-
-Open `FallGuard_Backend.ipynb` in Google Colab.
-
-### Step 2 — Run Cell 1 (Install packages)
-
-```python
-pip install flask flask-cors scikit-learn==1.8.0 joblib pandas twilio -q
-```
-
-### Step 3 — Run Cell 2 (Upload model files)
-
-When prompted, upload:
-- `model.pkl` — must be at least 100 KB
-- `label_encoder.pkl`
-
-### Step 4 — Run Cell 3 (Set Twilio credentials)
-
-```python
-TWILIO_SID     = 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-TWILIO_TOKEN   = 'your_auth_token'       # from console.twilio.com
-TWILIO_FROM    = '+12542744862'           # your Twilio number
-EMERGENCY_TO   = '+91XXXXXXXXXX'         # contact to receive SOS SMS
-EMERGENCY_NAME = 'Mom'
-```
-
-> **Get free Twilio credentials at** [twilio.com/try-twilio](https://www.twilio.com/try-twilio). Verify the `EMERGENCY_TO` number in the Twilio console (required for trial accounts).
-
-### Step 5 — Run Cell 4 (Start backend)
-
-The cell starts Flask and creates a Cloudflare tunnel. Copy the printed URL:
-
-```
-BACKEND LIVE!
-  Paste into frontend URL field:
-  https://xxxx-xxxx-xxxx.trycloudflare.com/api/predict
-```
-
-### Step 6 — Open frontend on your phone
-
-1. Push `index.html` to GitHub Pages (or any static host)
-2. Open it on your phone browser
-3. Paste the Colab tunnel URL into the **Backend URL** field
-4. Click **Test** to verify the connection
-5. Tap **▶ Start Detection**
-
-> The tunnel URL changes every time you restart Cell 4. Just paste the new one.
-
----
-
-## Running Locally (Alternative)
-
-```bash
-git clone https://github.com/YOUR_USERNAME/fallguard.git
-cd fallguard
-pip install -r requirements.txt
-```
-
-Copy `model.pkl` and `label_encoder.pkl` into the project root, then:
-
-```bash
-python app.py
-```
-
-Server starts at `http://localhost:5000`. To allow phones on your local network, set `host='0.0.0.0'` in `app.py`, then open `http://YOUR_LOCAL_IP:5000` on your phone.
-
----
-
-## How Live Detection Works
-
-```
-Phone sensors (60Hz)
-      ↓
-Rolling buffer — 50 samples
-      ↓
-Every 25 samples (~2.5s) → compute 9 features
-      ↓
-POST /api/predict → Random Forest model
-      ↓
-Fall detected + confidence ≥ threshold?
-      ↓
-triggerSOS() → countdown + voice + GPS + SMS
-```
-
-### The 9 Computed Features
-
-| Feature | Description |
-|---------|-------------|
-| `acc_max` | Peak resultant acceleration magnitude |
-| `gyro_max` | Peak resultant gyroscope magnitude |
-| `lin_max` | Peak linear acceleration (gravity subtracted) |
-| `acc_kurtosis` | Distribution peakedness — high spikes indicate falls |
-| `gyro_kurtosis` | Gyroscope distribution peakedness |
-| `acc_skewness` | Acceleration distribution asymmetry |
-| `gyro_skewness` | Gyroscope distribution asymmetry |
-| `post_gyro_max` | Second-half window gyroscope peak (post-fall stillness) |
-| `post_lin_max` | Second-half window linear acceleration peak |
-
----
-
-## SOS System Flow
-
-```
-Fall detected (confidence above slider threshold)
-        ↓
-🚨 Overlay appears — beep alarm + phone vibrates
-        ↓
-🎤 Phone speaks: "Are you okay?"
-        ↓
-Mic listens continuously throughout countdown
-        ↓
-┌─────────────────────┬────────────────────────────┐
-│ Voice: "I am OK"    │ Voice: "Help" / "Madad"    │
-│ → Cancel SOS        │ → Send SMS immediately     │
-└─────────────────────┴────────────────────────────┘
-        ↓ (no response)
-10-second countdown reaches zero
-        ↓
-📍 GPS location fetched
-        ↓
-📨 Twilio SMS sent:
-   "FALL ALERT! Forward Fall detected with 92% confidence
-    at 14:32:05. Please check on Mom immediately!
-    Location: https://maps.google.com/?q=28.6139,77.2090"
-```
-
-### Voice Commands
-
-| Say | Action |
-|-----|--------|
-| *"I am OK"* / *"Okay"* / *"Fine"* | Cancel SOS |
-| *"Haan"* / *"Theek"* / *"Safe"* | Cancel SOS |
-| *"Help"* / *"Send"* / *"Emergency"* | Send SOS immediately |
-| *"Madad"* / *"Hurt"* / *"Pain"* | Send SOS immediately |
-
----
-
-## Activity Labels
-
-| Code | Activity | Category |
-|------|----------|----------|
-| FOL | Forward Fall | 🔴 fall |
-| FKL | Fall Kneel | 🔴 fall |
-| SDL | Sideways Fall | 🔴 fall |
-| BSC | Back Fall | 🔴 fall |
-| STU | Stumble | 🟡 stumble |
-| WAL | Walking | 🟢 normal |
-| JOG | Jogging | 🟢 normal |
-| STD | Standing | 🟢 normal |
-| STN | Standing Still | 🟢 normal |
-| JUM | Jumping | 🟢 normal |
-| CSI | Chair Sit-In | 🟢 normal |
-| CSO | Chair Sit-Out | 🟢 normal |
-| SCH | Sit Chair | 🟢 normal |
-
----
-
-## API Reference
-
-### `POST /api/predict`
-
-Single prediction from sensor features.
-
-**Request:**
-```json
-{
-  "acc_max": 26.04, "gyro_max": 7.31, "lin_max": 11.13,
-  "acc_kurtosis": 20.38, "gyro_kurtosis": 2.78,
-  "acc_skewness": 3.89, "gyro_skewness": 1.59,
-  "post_gyro_max": 7.09, "post_lin_max": 10.79
-}
-```
-
-**Response:**
-```json
-{
-  "label": "FOL", "name": "Forward Fall",
-  "category": "fall", "confidence": 87.5,
-  "top5": [{"label": "FOL", "name": "Forward Fall", "prob": 87.5}, ...]
-}
-```
-
-### `POST /api/sos`
-
-Triggers Twilio SMS to emergency contact.
-
-**Request:**
-```json
-{
-  "label": "FOL", "confidence": 87.5,
-  "gps_text": "Lat: 28.613900, Lon: 77.209000",
-  "gps_link": "https://maps.google.com/?q=28.6139,77.209"
-}
-```
-
-**Response:**
-```json
-{ "sent": true, "sid": "SMxxxxxxxxxxxx" }
-```
-
----
-
-## SOS Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Contact name | Mom | Name shown in SMS sent confirmation |
-| Min confidence | 80% | Slider (50–95%) — minimum confidence to trigger SOS |
-| Countdown | 10 sec | Seconds before SMS auto-sends if no voice response |
-
----
-
-## Fall History
-
-Every SOS-triggering fall is automatically saved to browser `localStorage`:
-
-- Fall code + activity name
-- Date and time
-- Confidence % from the model
-- GPS coordinates as a clickable Google Maps link
-- **SOS SENT** badge if SMS was dispatched
-
-Up to 100 events stored. Use **Clear All** to wipe the log.
-
----
-
-## Requirements
-
-```
-flask
-flask-cors
-scikit-learn==1.8.0
-joblib
-pandas
-twilio
-```
-
----
-
-## .gitignore
-
-```
-model.pkl
-label_encoder.pkl
-Train.csv
-__pycache__/
-*.pyc
-.env
-venv/
-```
+- **100% offline** — works with no WiFi, no mobile data, no server
+- **Always-on background monitoring** — runs even when screen is off, phone locked, or other apps are open
+- **Pops up over any app** — SOS screen appears over YouTube, calls, music — whatever is running
+- **Auto-restart on reboot** — monitoring resumes automatically after phone restarts
+- **Haptic feedback** — Morse SOS vibration pattern for deaf and hard-of-hearing users
+- **Voice cancel** — say "Cancel" to stop a false alarm without touching the screen
+- **Text-to-Speech alerts** — spoken countdown so user knows what's happening
+- **GPS in SMS** — emergency contact gets a Google Maps link with exact location
+- **Adjustable sensitivity** — tune detection threshold from 0% to 100%
+- **Adjustable countdown** — set SOS delay from 5 to 60 seconds
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | HTML5, CSS3, Vanilla JS |
-| Sensors | DeviceMotionEvent API |
-| Voice | Web Speech API (SpeechSynthesis + SpeechRecognition) |
-| Location | Geolocation API |
-| ML Model | scikit-learn RandomForestClassifier (200 trees) |
-| Backend | Python Flask + Flask-CORS |
-| SMS | Twilio REST API |
-| Backend hosting | Google Colab + Cloudflare Tunnel (free) |
-| Frontend hosting | GitHub Pages (free) |
+### Android App
+| Component | Technology |
+|---|---|
+| Language | Kotlin |
+| Min SDK | Android 8.0 (API 26) |
+| Target SDK | Android 15 (API 35) |
+| UI | ViewBinding + Material Design 3 |
+| Background service | Foreground Service + WakeLock |
+| Sensor reading | Android SensorManager (50 Hz) |
+| On-device ML | ONNX Runtime Android 1.19.2 |
+| SMS | Android SmsManager (native) |
+| Location | Android LocationManager (GPS satellite) |
+| Voice | Android SpeechRecognizer (on-device) |
+| Text-to-Speech | Android TextToSpeech |
+| Haptics | Android VibratorManager |
+| Storage | SharedPreferences |
+| Auto-start | BroadcastReceiver (BOOT_COMPLETED) |
+
+### ML Pipeline (Python)
+| Component | Technology |
+|---|---|
+| Language | Python 3 |
+| Model | RandomForest (scikit-learn) |
+| Features | 9 statistical features from IMU windows |
+| Labels | 13 activity classes (4 fall, 1 stumble, 8 normal) |
+| Export | skl2onnx → model.onnx |
+| Training data | IMU sensor dataset (accelerometer + gyroscope) |
 
 ---
 
-## Troubleshooting
+## Project Structure
 
-**Backend URL test fails**
-Re-run Cell 4 in Colab — the tunnel URL changes each session. Paste the new URL and click Test.
-
-**No sensor data on phone**
-Must open on a real mobile device. iOS 13+ requires HTTPS — use GitHub Pages, not `file://`.
-
-**SMS not sending**
-Verify `EMERGENCY_TO` in Twilio console (trial accounts require verified numbers). Regenerate Auth Token if it was ever exposed publicly.
-
-**Model prediction errors**
-Ensure `model.pkl` was trained with `scikit-learn==1.8.0`. Re-upload via Cell 2 if you see EOF errors.
+```
+FallGuard/
+├── app/src/main/
+│   ├── java/com/fallguard/
+│   │   ├── ml/
+│   │   │   ├── FallClassifier.kt          # ONNX inference engine
+│   │   │   └── SensorFeatureExtractor.kt  # 9 feature computation
+│   │   ├── service/
+│   │   │   ├── FallDetectionService.kt    # Always-on foreground service
+│   │   │   └── BootReceiver.kt            # Auto-start on reboot
+│   │   ├── ui/
+│   │   │   ├── MainActivity.kt            # Home screen
+│   │   │   ├── SettingsActivity.kt        # Configuration
+│   │   │   └── SosAlertActivity.kt        # SOS countdown screen
+│   │   └── utils/
+│   │       ├── SmsSender.kt               # Native SMS (no Twilio)
+│   │       ├── LocationHelper.kt          # GPS with timeout fallback
+│   │       ├── HapticManager.kt           # Morse SOS vibration
+│   │       ├── TtsManager.kt              # Text-to-speech alerts
+│   │       ├── VoiceCommandManager.kt     # Voice cancel listener
+│   │       └── Prefs.kt                   # Settings storage
+│   ├── assets/
+│   │   └── model.onnx                     # Trained ML model (add manually)
+│   └── res/                               # Layouts, drawables, themes
+├── app/build.gradle                       # Dependencies
+└── README.md
+```
 
 ---
 
-*Built at IIIT Manipur — protecting lives with AI.*
+## Getting Started
+
+### Step 1 — Export your model to ONNX
+
+In your Python ML environment, run:
+
+```python
+from skl2onnx import convert_sklearn
+from skl2onnx.common.data_types import FloatTensorType
+import joblib
+
+model = joblib.load("model.pkl")
+le    = joblib.load("label_encoder.pkl")
+
+onx = convert_sklearn(
+    model, "FallGuard",
+    [("input", FloatTensorType([None, 9]))]
+)
+with open("model.onnx", "wb") as f:
+    f.write(onx.SerializeToString())
+
+print("Label classes:", list(le.classes_))
+```
+
+### Step 2 — Add model to Android project
+
+Copy `model.onnx` into:
+```
+app/src/main/assets/model.onnx
+```
+
+### Step 3 — Open in Android Studio
+
+1. Open Android Studio
+2. File → Open → select the `FallGuard` folder
+3. Wait for Gradle sync to complete
+4. Click ▶ Run
+
+### Step 4 — Configure the app
+
+1. Open the app on your phone
+2. Grant all permissions (SMS, Location, Microphone, Notifications)
+3. Allow "Display over other apps" when prompted
+4. Go to Settings → enter contact name and phone number with country code (e.g. `+919876543210`)
+5. Tap Start Monitoring
+
+---
+
+## The 9 Features
+
+These are extracted from a 2-second sliding window of sensor data:
+
+| Feature | Description |
+|---|---|
+| `acc_max` | Peak acceleration magnitude |
+| `gyro_max` | Peak gyroscope magnitude |
+| `lin_max` | Peak linear acceleration magnitude |
+| `acc_kurtosis` | Sharpness of acceleration spike |
+| `gyro_kurtosis` | Sharpness of rotation spike |
+| `acc_skewness` | Directional asymmetry of acceleration |
+| `gyro_skewness` | Directional asymmetry of rotation |
+| `post_gyro_max` | Peak gyroscope in 1s post-event window |
+| `post_lin_max` | Peak linear acceleration in 1s post-event window |
+
+---
+
+## Activity Labels
+
+| Category | Labels |
+|---|---|
+| 🔴 Fall | FOL (Forward), FKL (Kneel), SDL (Sideways), BSC (Back) |
+| 🟡 Stumble | STU |
+| 🟢 Normal | WAL, JOG, STD, STN, JUM, CSI, CSO, SCH |
+
+---
+
+## Permissions Required
+
+| Permission | Why |
+|---|---|
+| `SEND_SMS` | Send SOS alert to emergency contact |
+| `ACCESS_FINE_LOCATION` | Get GPS coordinates for SMS |
+| `RECORD_AUDIO` | Voice cancel command |
+| `POST_NOTIFICATIONS` | Show monitoring notification |
+| `SYSTEM_ALERT_WINDOW` | Show SOS screen over other apps |
+| `HIGH_SAMPLING_RATE_SENSORS` | Read sensors at 50Hz |
+| `RECEIVE_BOOT_COMPLETED` | Auto-start after reboot |
+| `FOREGROUND_SERVICE_HEALTH` | Background health monitoring |
+| `WAKE_LOCK` | Keep CPU active when screen is off |
+
+---
+
+## Team
+
+Built at a hackathon by **Impact Innovators**
+
+| Member | Role |
+|---|---|
+| Saurav Yadav] | Android app development |
+| [Rishabh Pandey] | ML model training and pipeline |
+| [Uttam Kumar] | Data collection and research |
+
+---
+
+## License
+
+MIT License — feel free to use, modify, and build on this project.

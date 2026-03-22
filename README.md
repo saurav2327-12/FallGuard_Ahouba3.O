@@ -1,4 +1,4 @@
-# SafeStep AI | Intelligent Fall Detection for the Visually Impaired
+# FallGuard AI | Intelligent Fall Detection for the Visually Impaired
 
 ### The Problem
 Visually impaired individuals face a significantly higher risk of falls due to environmental barriers. Delayed assistance after a fall can lead to severe medical complications. Current solutions are often expensive, specialized hardware—we are making safety accessible via the smartphone already in their pocket.
